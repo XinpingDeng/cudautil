@@ -31,19 +31,18 @@ __device__ static inline float cuHalf2Float(half a) {return __half2float(a);}
 
 // We need more type case overload functions here
 __device__ static inline void scalar_typecast(const float a, float   &b) { b = a;}
-
 __device__ static inline void scalar_typecast(const float a, double  &b) { b = a;}
 __device__ static inline void scalar_typecast(const float a, half    &b) { b = cuFloat2Half(a);}
 __device__ static inline void scalar_typecast(const float a, int     &b) { b = cuFloat2Int(a);}
 __device__ static inline void scalar_typecast(const float a, int16_t &b) { b = cuFloat2Int(a);}
 __device__ static inline void scalar_typecast(const float a, int8_t  &b) { b = cuFloat2Int(a);}
 
-__device__ static inline void scalar_typecast(const double a,  float &b) { b = a;}
-__device__ static inline void scalar_typecast(const half a,    float &b) { b = cuHalf2Float(a);}
-__device__ static inline void scalar_typecast(const int a,     float &b) { b = a;}
-__device__ static inline void scalar_typecast(const int16_t a, float &b) { b = a;}
-__device__ static inline void scalar_typecast(const int8_t a,  float &b) { b = a;}
-__device__ static inline void scalar_typecast(const unsigned a,  float &b) { b = a;}
+__device__ static inline void scalar_typecast(const double a,   float &b) { b = a;}
+__device__ static inline void scalar_typecast(const half a,     float &b) { b = cuHalf2Float(a);}
+__device__ static inline void scalar_typecast(const int a,      float &b) { b = a;}
+__device__ static inline void scalar_typecast(const int16_t a,  float &b) { b = a;}
+__device__ static inline void scalar_typecast(const int8_t a,   float &b) { b = a;}
+__device__ static inline void scalar_typecast(const unsigned a, float &b) { b = a;}
 
 template <typename TIN, typename TOUT>
 __device__ static inline void complex_typecast(const TIN a, TOUT &b){

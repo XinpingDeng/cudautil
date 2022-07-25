@@ -11,7 +11,7 @@
  *
  * \tparam TREAL Real part data type
  * \tparam TIMAG Imag part data type
- * \tparam TCMPX So-called complex data type, which is actually the data type of its components
+ * \tparam TCMPX Complex data type
  * 
  * \param[in]  d_real  Real part to build complex numbers
  * \param[in]  d_imag  Imag part to build complex numbers
@@ -29,8 +29,8 @@ __global__ void g_complexbuilder(const TREAL *d_real, const TIMAG *d_imag, TCMPX
   int idx = blockDim.x*blockIdx.x + threadIdx.x;
   if(idx<ndata){
 
-    scalar_typecast(d_real[idx], d_cmpx[2*idx]);
-    scalar_typecast(d_imag[idx], d_cmpx[2*idx+1]);
+    scalar_typecast(d_real[idx], d_cmpx[idx].x);
+    scalar_typecast(d_imag[idx], d_cmpx[idx].y);
   }
 }
 
@@ -40,32 +40,28 @@ __global__ void g_complexbuilder(const TREAL *d_real, const TIMAG *d_imag, TCMPX
  * \tparam TIMAG Typename of the imag part data
  * \tparam TCMPX Typename of the complex data
  *
- * The class does not really build a complex vector, instead it converts \p d_real and \p d_imag to \p TCMPX
- * and then put the data interleaved as [REAL IMAG ... REAL IMAG], so that we can cast the number to complex data type later.
- * As of that the data type \tparam TCMPX is not a complex data type, but the data type of its components.
- *
  * The class use kernel `g_complexbuilder` to convert data type and build complex numbers. `g_complexbuilder` uses `scalar_typecast` to convert data type. 
  * As of that, the allowed data type here is limited to following table (more types can be added later) 
  * 
  * TREAL/TIMAG    | TCMPX
  * -------|----
- * float  | float
- * float  | double
- * float  | half 
- * float  | int
- * float  | int16_t
- * float  | int8_t
- * double | float
- * half   | float
- * int    | float
- * int16_t| float
- * int8_t | float
+ * float  | cuComplex
+ * float  | cuDoubleComplex
+ * float  | half2
+ * float  | int2
+ * float  | short2
+ * float  | int8_t ???
+ * double | cuComplex
+ * half   | cuComplex
+ * int    | cuComplex
+ * int16_t| cuComplex
+ * int8_t | cuComplex
  *
  */
 template <typename TREAL, typename TIMAG, typename TCMPX>
 class ComplexDataBuilder {
 public:
-  TCMPX *d_cmpx = NULL; ///< A so-called complex data on device with data type \tparam TCMPX
+  TCMPX *d_cmpx = NULL; ///< Complex data on device
   
   //! Constructor of ComplexDataBuilder class.
   /*!
@@ -78,7 +74,7 @@ public:
    *
    * \tparam TREAL Real part data type
    * \tparam TIMAG Imag part data type
-   * \tparam TCMPX So-called complex data type, which is actually the data type of its components
+   * \tparam TCMPX Complex data type
    * 
    * \param[in] d_real  Real part to build complex numbers
    * \param[in] d_imag  Imag part to build complex numbers
@@ -88,7 +84,7 @@ public:
    */
   ComplexDataBuilder(TREAL *d_real, TIMAG *d_imag, int ndata, int nthread )
     :d_real(d_real), d_imag(d_imag), ndata(ndata), nthread(nthread){
-    checkCudaErrors(cudaMalloc(&d_cmpx, 2*ndata*sizeof(TCMPX)));
+    checkCudaErrors(cudaMalloc(&d_cmpx, ndata*sizeof(TCMPX)));
 
     nblock = ndata/nthread;
     nblock = (nblock>1)?nblock:1;
