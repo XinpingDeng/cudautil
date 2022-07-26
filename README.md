@@ -1,2 +1,2 @@
-# cudautil
-Here I put my CUDA utilisation functions together.
+# util
+Here I put my utilisation functions together.
