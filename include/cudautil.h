@@ -1028,4 +1028,4 @@ private:
 };
 
 
-#endif
+#endif // _CUDAUTIL_H
