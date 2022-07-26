@@ -1,5 +1,5 @@
-#ifndef _UTIL_H
-#define _UTIL_H
+#ifndef _UTIL_UTIL_H
+#define _UTIL_UTIL_H
 
 #define __STDC_FORMAT_MACROS
 #include <inttypes.h>

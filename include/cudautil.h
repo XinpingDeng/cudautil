@@ -1,5 +1,5 @@
-#ifndef _CUDAUTIL_H
-#define _CUDAUTIL_H
+#ifndef _UTIL_CUDAUTIL_H
+#define _UTIL_CUDAUTIL_H
 
 #include <cuComplex.h>
 #include <cuda_fp16.h>
