@@ -888,7 +888,7 @@ private:
  */
 template <typename T>
 class DeviceMemoryAllocator {
- public:
+public:
   T *d_data = NULL; ///< Device memory
   
   /*! Constructor of class DeviceMemoryAllocator
@@ -896,8 +896,8 @@ class DeviceMemoryAllocator {
    * \param[in] ndata Number of data on host as type \p T
    *
    */
- DeviceMemoryAllocator(int ndata)
-   :ndata(ndata){
+  DeviceMemoryAllocator(int ndata)
+    :ndata(ndata){
     checkCudaErrors(cudaMalloc(&d_data, ndata*sizeof(T)));
   }
   
@@ -910,7 +910,7 @@ class DeviceMemoryAllocator {
     checkCudaErrors(cudaFree(d_data));
   }
 
- private:
+private:
   int ndata; /// < Number of data points   
 };
 
@@ -922,7 +922,7 @@ class DeviceMemoryAllocator {
  */
 template <typename T>
 class DeviceDataExtractor {
- public:
+public:
   T *h_data = NULL; ///< Host buffer to hold data
   
   /*!
@@ -930,8 +930,8 @@ class DeviceDataExtractor {
    * \param[in] ndata Number of data on host as type \p T
    * async memcpy will not work here as we always get new copy of memory
    */
- DeviceDataExtractor(T *d_data, int ndata)
-   :d_data(d_data), ndata(ndata){
+  DeviceDataExtractor(T *d_data, int ndata)
+    :d_data(d_data), ndata(ndata){
    
     size = ndata*sizeof(T);
     checkCudaErrors(cudaMallocHost(&h_data, size));
@@ -947,7 +947,7 @@ class DeviceDataExtractor {
     checkCudaErrors(cudaFreeHost(h_data));
   }
   
- private:
+private:
   T *d_data = NULL;
   int ndata;
   int size;
@@ -1001,7 +1001,7 @@ private:
  */
 template <typename T>
 class HostMemoryAllocator {
- public:
+public:
   T *h_data = NULL; ///< Host memory
   
   /*! Constructor of class HostMemoryAllocator
@@ -1009,8 +1009,8 @@ class HostMemoryAllocator {
    * \param[in] ndata Number of data on host as type \p T
    *
    */
- HostMemoryAllocator(int ndata)
-   :ndata(ndata){
+  HostMemoryAllocator(int ndata)
+    :ndata(ndata){
     checkCudaErrors(cudaMallocHost(&h_data, ndata*sizeof(T)));
   }
   
@@ -1023,7 +1023,7 @@ class HostMemoryAllocator {
     checkCudaErrors(cudaFreeHost(h_data));
   }
 
- private:
+private:
   int ndata; /// < Number of data points   
 };
 
