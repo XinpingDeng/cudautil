@@ -3,7 +3,12 @@
 
 #include <cuComplex.h>
 #include <cuda_fp16.h>
+#include <cuda_runtime.h>
+#include <cuda.h>
+
+#include <cufft.h>
 #include <curand.h>
+#include <curand_kernel.h>
 #include <helper_cuda.h>
 
 #include "reduction_kernel.h"
