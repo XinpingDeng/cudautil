@@ -7,7 +7,8 @@ set(CMAKE_LIBRARY_OUTPUT_DIRECTORY lib) # For shared library
 set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY lib) # For static library
 
 add_executable(test tests/test.cu)
-target_include_directories(test PRIVATE /usr/local/cuda-11/samples/common/inc)
+#target_include_directories(test PRIVATE $ENV{CUDA_ROOT}/samples/common/inc)
+target_include_directories(test PRIVATE /usr/local/cuda/samples/common/inc)
 
 # we do not need to add cuda libraries if we link it with CUDA
 set_target_properties(test PROPERTIES LINKER_LANGUAGE CUDA)
