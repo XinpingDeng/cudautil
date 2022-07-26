@@ -4,9 +4,9 @@
 #include <cuComplex.h>
 #include <cuda_fp16.h>
 #include <curand.h>
+#include <helper_cuda.h>
 
 #include "reduction_kernel.h"
-#include "helper_cuda.h"
 
 /*! \brief A function to check CUDA global memory.
  *
@@ -42,7 +42,6 @@ __device__ static inline void scalar_typecast(const float a, unsigned &b) { b = 
 
 // The following convert other types to float
 __device__ static inline void scalar_typecast(const double a,   float &b) { b = a;}
-__device__ static inline void scalar_typecast(const float a,    float &b) { b = a;}
 __device__ static inline void scalar_typecast(const half a,     float &b) { b = __half2float(a);}
 __device__ static inline void scalar_typecast(const int a,      float &b) { b = a;}
 __device__ static inline void scalar_typecast(const int16_t a,  float &b) { b = a;}
