@@ -12,3 +12,6 @@ target_include_directories(test PRIVATE /usr/local/cuda/samples/common/inc)
 
 # we do not need to add cuda libraries if we link it with CUDA
 set_target_properties(test PROPERTIES LINKER_LANGUAGE CUDA)
+
+add_library(cudautil STATIC include/cudautil.h) # The performance is much better, default to STATIC
+set_target_properties(cudautil PROPERTIES LINKER_LANGUAGE CUDA)
