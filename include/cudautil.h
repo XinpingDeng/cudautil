@@ -13,6 +13,12 @@
 
 #include "reduction_kernel.h"
 
+#define CUDAUTIL_FLOAT2HALF __float2half
+#define CUDAUTIL_FLOAT2INT  __float2int_rz
+#define CUDAUTIL_FLOAT2UINT __float2uint_rz
+#define CUDAUTIL_HALF2FLOAT __half2float
+#define CUDAUTIL_DOUBLE2INT __double2int_rz
+
 /*! \brief A function to check CUDA global memory.
  *
  * This function prints out total and available CUDA global memory in MBytes. 
@@ -39,15 +45,15 @@ int print_cuda_memory_info() {
 // The following convert float to other types
 __device__ static inline void scalar_typecast(const float a, double   &b) { b = a;}
 __device__ static inline void scalar_typecast(const float a, float    &b) { b = a;}
-__device__ static inline void scalar_typecast(const float a, half     &b) { b = __float2half(a);}
-__device__ static inline void scalar_typecast(const float a, int      &b) { b = __float2int_rz(a);}
-__device__ static inline void scalar_typecast(const float a, int16_t  &b) { b = __float2int_rz(a);}
-__device__ static inline void scalar_typecast(const float a, int8_t   &b) { b = __float2int_rz(a);}
-__device__ static inline void scalar_typecast(const float a, unsigned &b) { b = __float2uint_rz(a);}
+__device__ static inline void scalar_typecast(const float a, half     &b) { b = CUDAUTIL_FLOAT2HALF(a);}
+__device__ static inline void scalar_typecast(const float a, int      &b) { b = CUDAUTIL_FLOAT2INT(a);}
+__device__ static inline void scalar_typecast(const float a, int16_t  &b) { b = CUDAUTIL_FLOAT2INT(a);}
+__device__ static inline void scalar_typecast(const float a, int8_t   &b) { b = CUDAUTIL_FLOAT2INT(a);}
+__device__ static inline void scalar_typecast(const float a, unsigned &b) { b = CUDAUTIL_FLOAT2UINT(a);}
 
 // The following convert other types to float
 __device__ static inline void scalar_typecast(const double a,   float &b) { b = a;}
-__device__ static inline void scalar_typecast(const half a,     float &b) { b = __half2float(a);}
+__device__ static inline void scalar_typecast(const half a,     float &b) { b = CUDAUTIL_HALF2FLOAT(a);}
 __device__ static inline void scalar_typecast(const int a,      float &b) { b = a;}
 __device__ static inline void scalar_typecast(const int16_t a,  float &b) { b = a;}
 __device__ static inline void scalar_typecast(const int8_t a,   float &b) { b = a;}
