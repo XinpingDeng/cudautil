@@ -61,7 +61,7 @@ __device__ static inline void complex_typecast(const TIN a, TOUT &b){
 }
 
 template <typename TREAL, typename TIMAG, typename TCMPX>
-__device__ static inline void make_cucmplex(const TREAL x, const TIMAG y, TCMPX &z){
+__device__ static inline void make_cucomplex(const TREAL x, const TIMAG y, TCMPX &z){
 
   scalar_typecast(x, z.x);
   scalar_typecast(y, z.y);
