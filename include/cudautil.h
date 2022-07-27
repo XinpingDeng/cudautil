@@ -34,6 +34,9 @@ extern "C" {
 }
 #endif
 
+__device__ __host__ static inline cuComplex  operator*(cuComplex a, float b) { return make_cuComplex(a.x*b, a.y*b);}
+__device__ __host__ static inline cuComplex  operator/(cuComplex a, float b) { return make_cuComplex(a.x/b, a.y/b);}
+
 #include "reduction_kernel.h"
 #define CUDAUTIL_FLOAT2HALF __float2half
 #define CUDAUTIL_FLOAT2INT  __float2int_rz
