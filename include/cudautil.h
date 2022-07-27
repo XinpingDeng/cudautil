@@ -58,11 +58,9 @@ __device__ static inline void scalar_typecast(const float a, T &b) { b = CUDAUTI
 
 // The following are special cases
 __device__ static inline void scalar_typecast(const float a, half     &b) { b = CUDAUTIL_FLOAT2HALF(a);}
-//__device__ static inline void scalar_typecast(const float a, int      &b) { b = CUDAUTIL_FLOAT2INT(a);}
-//__device__ static inline void scalar_typecast(const float a, int16_t  &b) { b = CUDAUTIL_FLOAT2INT(a);}
-//__device__ static inline void scalar_typecast(const float a, int8_t   &b) { b = CUDAUTIL_FLOAT2INT(a);}
-__device__ static inline void scalar_typecast(const float a, unsigned &b) { b = CUDAUTIL_FLOAT2UINT(a);}
 __device__ static inline void scalar_typecast(const half a,  float    &b) { b = CUDAUTIL_HALF2FLOAT(a);}
+__device__ static inline void scalar_typecast(const float a, unsigned &b) { b = CUDAUTIL_FLOAT2UINT(a);}
+
 
 template <typename TREAL, typename TIMAG, typename TCMPX>
 __device__ static inline void make_cuComplex(const TREAL x, const TIMAG y, TCMPX &z){
