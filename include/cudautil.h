@@ -41,6 +41,18 @@ __device__ __host__ static inline void operator/=(cuComplex &a, float b)     { a
 __device__ __host__ static inline void operator+=(cuComplex &a, cuComplex b) { a.x+=b.x; a.y+=b.y;}
 __device__ __host__ static inline void operator-=(cuComplex &a, cuComplex b) { a.x-=b.x; a.y-=b.y;}
 
+template <typename TMIN, typename TSUB, typename TRES>
+__device__ static inline TRES operator-(const TMIN minuend, const TSUB subtrahend) {
+  TRES casted_minuend;
+  TRES casted_subtrahend;
+  
+  scalar_typecast(minuend,    casted_minuend);
+  scalar_typecast(subtrahend, casted_subtrahend);  
+
+  TRES result = casted_minuend-casted_subtrahend;
+  return result;
+}
+
 #include "reduction_kernel.h"
 #define CUDAUTIL_FLOAT2HALF __float2half
 #define CUDAUTIL_FLOAT2INT  __float2int_rz
@@ -483,7 +495,8 @@ __global__ void cudautil_subtract(const T1 *d_data1, const T2 *d_data2, float *d
   int idx = blockDim.x*blockIdx.x + threadIdx.x;
 
   if(idx < ndata){
-    scalar_subtract(d_data1[idx], d_data2[idx], d_diff[idx]);
+    //scalar_subtract(d_data1[idx], d_data2[idx], d_diff[idx]);
+    d_diff[idx] = d_data1[idx] - d_data2[idx];
   }
 }
 
