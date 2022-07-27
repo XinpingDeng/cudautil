@@ -2,8 +2,8 @@
 #define _GNU_SOURCE
 #endif
 
-#include "../include/cudautil.h"
-#include "../include/reduction_kernel.h"
+#include "cudautil.h"
+#include "reduction_kernel.h"
 
 int print_cuda_memory_info() {
   //cudaError_t status;
@@ -22,14 +22,6 @@ int print_cuda_memory_info() {
   return EXIT_SUCCESS;
 }
 
-/*! A kernel to contraint random number from range (0.0 1.0] to range (exclude include] or [include exclude).
- *
- * \param[in, out] data    The input data in range (0.0 1.0] and new data in range (exclude include] or [include exclude) is also returned with it.
- * \param[in]      exclude The exclusive end of random numbers
- * \param[in]      range   The range of random numbers, it does not have to be positive, it is calculated with `include - exclude`
- * \param[in]      ndata   Number of data
- *
- */
 __global__ void cudautil_contraintor(float *data, float exclude, float range, int ndata){
   // Maximum x-dimension of a grid of thread blocks is 2^31-1
   // Maximum x- or y-dimension of a block is 1024

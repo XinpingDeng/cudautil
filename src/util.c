@@ -2,7 +2,7 @@
 #define _GNU_SOURCE
 #endif
 
-#include "../include/util.h"
+#include "util.h"
 
 int seconds2dhms(uint64_t seconds, char *dhms){
 
