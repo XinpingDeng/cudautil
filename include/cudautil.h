@@ -67,25 +67,20 @@ __device__ static inline void scalar_typecast(const int8_t a,   float &b) { b = 
 __device__ static inline void scalar_typecast(const unsigned a, float &b) { b = a;}
 
 template <typename TREAL, typename TIMAG, typename TCMPX>
-__device__ static inline TCMPX make_cuComplex(const TREAL x, const TIMAG y){
-
-  TCMPX z = {0,0};
-  
+__device__ static inline void make_cuComplex(const TREAL x, const TIMAG y, TCMPX &z){
   scalar_typecast(x, z.x);
   scalar_typecast(y, z.y);
-
-  return z;
 }
 
 template <typename TMIN, typename TSUB, typename TRES>
-__device__ static inline TRES scalar_subtract(const TMIN minuend, const TSUB subtrahend) {
+__device__ static inline void scalar_subtract(const TMIN minuend, const TSUB subtrahend, TRES &result) {
   TRES casted_minuend;
   TRES casted_subtrahend;
   
   scalar_typecast(minuend,    casted_minuend);
   scalar_typecast(subtrahend, casted_subtrahend);  
 
-  return casted_minuend - casted_subtrahend;
+  result = casted_minuend-casted_subtrahend;
 }
 
 /*! \brief A class to generate uniform distributed \p ndata random float data on device 
