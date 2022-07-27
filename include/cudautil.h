@@ -66,28 +66,26 @@ __device__ static inline void scalar_typecast(const int16_t a,  float &b) { b = 
 __device__ static inline void scalar_typecast(const int8_t a,   float &b) { b = a;}
 __device__ static inline void scalar_typecast(const unsigned a, float &b) { b = a;}
 
-template <typename TIN, typename TOUT>
-__device__ static inline void complex_typecast(const TIN a, TOUT &b){
-  
-  scalar_typecast(a.x, b.x);
-  scalar_typecast(a.y, b.y);
-}
-
 template <typename TREAL, typename TIMAG, typename TCMPX>
-__device__ static inline void make_cucomplex(const TREAL x, const TIMAG y, TCMPX &z){
+__device__ static inline TCMPX make_cuComplex(const TREAL x, const TIMAG y){
 
+  TCMPX z = {0,0};
+  
   scalar_typecast(x, z.x);
   scalar_typecast(y, z.y);
+
+  return z;
 }
 
 template <typename TMIN, typename TSUB, typename TRES>
-__device__ static inline void scalar_subtract(const TMIN minuend, const TSUB subtrahend, TRES &result) {
+__device__ static inline TRES scalar_subtract(const TMIN minuend, const TSUB subtrahend) {
   TRES casted_minuend;
   TRES casted_subtrahend;
   
   scalar_typecast(minuend,    casted_minuend);
   scalar_typecast(subtrahend, casted_subtrahend);  
-  result = casted_minuend - casted_subtrahend;
+
+  return casted_minuend - casted_subtrahend;
 }
 
 /*! \brief A class to generate uniform distributed \p ndata random float data on device 
@@ -494,7 +492,7 @@ __global__ void cudautil_subtract(const T1 *d_data1, const T2 *d_data2, float *d
   int idx = blockDim.x*blockIdx.x + threadIdx.x;
 
   if(idx < ndata){
-    scalar_subtract(d_data1[idx], d_data2[idx], d_diff[idx]);
+    d_diff[idx] = scalar_subtract(d_data1[idx], d_data2[idx]);
   }
 }
 
