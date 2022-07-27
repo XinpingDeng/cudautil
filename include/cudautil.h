@@ -34,11 +34,11 @@ extern "C" {
 }
 #endif
 
-__device__ __host__ static inline cuComplex  operator*(cuComplex a, float b) { return make_cuComplex(a.x*b, a.y*b);}
-__device__ __host__ static inline cuComplex  operator*(float a, cuComplex b) { return make_cuComplex(b.x*a, b.y*a);}
-__device__ __host__ static inline cuComplex  operator/(cuComplex a, float b) { return make_cuComplex(a.x/b, a.y/b);}
-__device__ __host__ static inline cuComplex  operator+=(cuComplex a, cuComplex b) { return make_cuComplex(a.x+b.x, a.y+b.x);}
-__device__ __host__ static inline cuComplex  operator-=(cuComplex a, cuComplex b) { return make_cuComplex(a.x-b.x, a.y-b.x);}
+__device__ __host__ static inline cuComplex operator*(cuComplex a, float b) { return make_cuComplex(a.x*b, a.y*b);}
+__device__ __host__ static inline cuComplex operator*(float a, cuComplex b) { return make_cuComplex(b.x*a, b.y*a);}
+__device__ __host__ static inline cuComplex operator/(cuComplex a, float b) { return make_cuComplex(a.x/b, a.y/b);}
+__device__ __host__ static inline cuComplex operator+=(cuComplex a, cuComplex b) { return make_cuComplex(a.x+b.x, a.y+b.x);}
+__device__ __host__ static inline cuComplex operator-=(cuComplex a, cuComplex b) { return make_cuComplex(a.x-b.x, a.y-b.x);}
 
 #include "reduction_kernel.h"
 #define CUDAUTIL_FLOAT2HALF __float2half
@@ -792,7 +792,7 @@ private:
  *
  * \tparam T Complex number component data type
  * 
- * \param[in]  v         Input real data which is the components of complex samples
+ * \param[in]  v         input Complex data
  * \param[in]  ndata     Number of data samples to be calculated
  * \param[out] amplitude Calculated amplitude
  * \param[out] phase     Calculated amplitude
@@ -807,8 +807,8 @@ __global__ void cudautil_amplitude_phase(const T *v, float *amplitude, float *ph
     float v1;
     float v2;
     
-    scalar_typecast(v[2*idx],  v1);
-    scalar_typecast(v[2*idx+1],v2);
+    scalar_typecast(v[idx].x, v1);
+    scalar_typecast(v[idx].y, v2);
     
     amplitude[idx] = sqrtf(v1*v1+v2*v2);
     phase[idx]     = atan2f(v2, v1); // in radians
@@ -832,7 +832,7 @@ public:
    *
    * \tparam TIN Input data type
    * 
-   * \param[in] d_data  Data to be calculated, it is interleaved as [REAL IMAG ... REAL IMAG] as type \p T
+   * \param[in] d_data  input Complex data
    * \param[in] ndata   Number of samples to be converted, the size of d_data is 2*ndata
    * \param[in] nthread Number of threads per CUDA block to run `cudautil_amplitude_phase` kernel
    *
