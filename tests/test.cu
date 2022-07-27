@@ -2,10 +2,12 @@
 #define _GNU_SOURCE
 #endif
 
-#include "../include/util.h"
-#include "../include/cudautil.h"
+#include "util.h"
+#include "cudautil.h"
 
 int main(int argc, char *argv[]){
+
+  print_cuda_memory_info();
   
   return EXIT_SUCCESS;
 }    
