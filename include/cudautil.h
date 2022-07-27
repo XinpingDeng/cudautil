@@ -495,8 +495,8 @@ __global__ void cudautil_subtract(const T1 *d_data1, const T2 *d_data2, float *d
   int idx = blockDim.x*blockIdx.x + threadIdx.x;
 
   if(idx < ndata){
-    //scalar_subtract(d_data1[idx], d_data2[idx], d_diff[idx]);
-    d_diff[idx] = d_data1[idx] - d_data2[idx];
+    scalar_subtract(d_data1[idx], d_data2[idx], d_diff[idx]);
+    //d_diff[idx] = d_data1[idx] - d_data2[idx];
   }
 }
 
