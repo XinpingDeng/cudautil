@@ -41,18 +41,6 @@ __device__ __host__ static inline void operator/=(cuComplex &a, float b)     { a
 __device__ __host__ static inline void operator+=(cuComplex &a, cuComplex b) { a.x+=b.x; a.y+=b.y;}
 __device__ __host__ static inline void operator-=(cuComplex &a, cuComplex b) { a.x-=b.x; a.y-=b.y;}
 
-template <typename TMIN, typename TSUB, typename TRES>
-__device__ static inline TRES operator-(const TMIN minuend, const TSUB subtrahend) {
-  TRES casted_minuend;
-  TRES casted_subtrahend;
-  
-  scalar_typecast(minuend,    casted_minuend);
-  scalar_typecast(subtrahend, casted_subtrahend);  
-
-  TRES result = casted_minuend-casted_subtrahend;
-  return result;
-}
-
 #include "reduction_kernel.h"
 #define CUDAUTIL_FLOAT2HALF __float2half
 #define CUDAUTIL_FLOAT2INT  __float2int_rz
@@ -74,21 +62,22 @@ __device__ static inline void scalar_typecast(const half a,  float    &b) { b = 
 __device__ static inline void scalar_typecast(const float a, unsigned &b) { b = CUDAUTIL_FLOAT2UINT(a);}
 
 
-template <typename TREAL, typename TIMAG, typename TCMPX>
-__device__ static inline void make_cuComplex(const TREAL x, const TIMAG y, TCMPX &z){
-  scalar_typecast(x, z.x);
-  scalar_typecast(y, z.y);
-}
-
 template <typename TMIN, typename TSUB, typename TRES>
-__device__ static inline void scalar_subtract(const TMIN minuend, const TSUB subtrahend, TRES &result) {
+__device__ static inline TRES operator-(const TMIN minuend, const TSUB subtrahend) {
   TRES casted_minuend;
   TRES casted_subtrahend;
   
   scalar_typecast(minuend,    casted_minuend);
   scalar_typecast(subtrahend, casted_subtrahend);  
 
-  result = casted_minuend-casted_subtrahend;
+  TRES result = casted_minuend-casted_subtrahend;
+  return result;
+}
+
+template <typename TREAL, typename TIMAG, typename TCMPX>
+__device__ static inline void make_cuComplex(const TREAL x, const TIMAG y, TCMPX &z){
+  scalar_typecast(x, z.x);
+  scalar_typecast(y, z.y);
 }
 
 /*! \brief A class to generate uniform distributed \p ndata random float data on device 
@@ -495,8 +484,7 @@ __global__ void cudautil_subtract(const T1 *d_data1, const T2 *d_data2, float *d
   int idx = blockDim.x*blockIdx.x + threadIdx.x;
 
   if(idx < ndata){
-    scalar_subtract(d_data1[idx], d_data2[idx], d_diff[idx]);
-    //d_diff[idx] = d_data1[idx] - d_data2[idx];
+    d_diff[idx] = d_data1[idx] - d_data2[idx];
   }
 }
 
