@@ -18,6 +18,14 @@ int main(int argc, char *argv[]){
 
   std::cout << c.x << "\t" 
 	    << c.y << std::endl;
+
+  c+=a;
+  std::cout << c.x << "\t" 
+	    << c.y << std::endl;
+
+  c-=a;
+  std::cout << c.x << "\t" 
+	    << c.y << std::endl;
   
   return EXIT_SUCCESS;
 }    
