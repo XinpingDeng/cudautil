@@ -4,3 +4,4 @@ project(util LANGUAGES CUDA CXX C)
 
 add_subdirectory(src)
 add_subdirectory(tests)
+add_subdirectory(Catch2)

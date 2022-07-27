@@ -5,9 +5,11 @@
 #include "util.h"
 #include "cudautil.h"
 
+#include <catch2/catch_test_macros.hpp>
+
 #include <iostream>
 
-int main(int argc, char *argv[]){
+TEST_CASE("cuComplex_divide", "cuComplex_divide") {
 
   print_cuda_memory_info();
 
@@ -15,17 +17,4 @@ int main(int argc, char *argv[]){
   cuComplex a = {10.0, 10.0};
 
   cuComplex c = a/b;
-
-  std::cout << c.x << "\t" 
-	    << c.y << std::endl;
-
-  c+=a;
-  std::cout << c.x << "\t" 
-	    << c.y << std::endl;
-
-  c-=a;
-  std::cout << c.x << "\t" 
-	    << c.y << std::endl;
-  
-  return EXIT_SUCCESS;
 }    
