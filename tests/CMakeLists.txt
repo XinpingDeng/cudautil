@@ -2,7 +2,7 @@ cmake_minimum_required(VERSION 3.13)
 
 project(test LANGUAGES CUDA CXX C)
 
-include_directories(../util/include) # so that I do not need to add it in my source code
+include_directories(../include) # so that I do not need to add it in my source code
 
 add_executable(test test.cu)
 target_include_directories(test PRIVATE /usr/local/cuda/samples/common/inc)
