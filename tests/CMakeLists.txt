@@ -2,7 +2,7 @@ cmake_minimum_required(VERSION 3.13)
 
 project(test LANGUAGES CUDA CXX C)
 
-set(UTIL_INC ../inc)
+set(UTIL_INC ../util/inc)
 set(CUDA_SAMPLES_COMMON_INC /usr/local/cuda/samples/common/inc)
 set(Catch2WithMain Catch2::Catch2WithMain)
 
