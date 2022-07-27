@@ -38,8 +38,7 @@
 #include <cooperative_groups.h>
 #include <cooperative_groups/reduce.h>
 #include <stdio.h>
-
-extern "C" bool isPow2(unsigned int x) { return ((x & (x - 1)) == 0); }
+#include "util.h"
 
 namespace cg = cooperative_groups;
 

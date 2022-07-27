@@ -3,7 +3,6 @@
 #endif
 
 #include "../include/util.h"
-
 #include "../include/cudautil.h"
 
 int main(int argc, char *argv[]){
