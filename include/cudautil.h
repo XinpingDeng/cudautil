@@ -50,17 +50,34 @@ __device__ __host__ static inline void operator-=(cuComplex &a, cuComplex b) { a
 
 // We need more type case overload functions here
 // The following convert float to other types
-template <typename T1, typename T2>
-__device__ static inline void scalar_typecast(const T1 a, T2 &b){b = a;}
-
-template <typename T>
-__device__ static inline void scalar_typecast(const float a, T &b) { b = CUDAUTIL_FLOAT2INT(a);}
-
-// The following are special cases
+__device__ static inline void scalar_typecast(const float a, double   &b) { b = a;}
+__device__ static inline void scalar_typecast(const float a, float    &b) { b = a;}
 __device__ static inline void scalar_typecast(const float a, half     &b) { b = CUDAUTIL_FLOAT2HALF(a);}
-__device__ static inline void scalar_typecast(const half a,  float    &b) { b = CUDAUTIL_HALF2FLOAT(a);}
+__device__ static inline void scalar_typecast(const float a, int      &b) { b = CUDAUTIL_FLOAT2INT(a);}
+__device__ static inline void scalar_typecast(const float a, int16_t  &b) { b = CUDAUTIL_FLOAT2INT(a);}
+__device__ static inline void scalar_typecast(const float a, int8_t   &b) { b = CUDAUTIL_FLOAT2INT(a);}
 __device__ static inline void scalar_typecast(const float a, unsigned &b) { b = CUDAUTIL_FLOAT2UINT(a);}
 
+// The following convert other types to float
+__device__ static inline void scalar_typecast(const double a,   float &b) { b = a;}
+__device__ static inline void scalar_typecast(const half a,     float &b) { b = CUDAUTIL_HALF2FLOAT(a);}
+__device__ static inline void scalar_typecast(const int a,      float &b) { b = a;}
+__device__ static inline void scalar_typecast(const int16_t a,  float &b) { b = a;}
+__device__ static inline void scalar_typecast(const int8_t a,   float &b) { b = a;}
+__device__ static inline void scalar_typecast(const unsigned a, float &b) { b = a;}
+
+//// We need more type case overload functions here
+//// The following convert float to other types
+//template <typename T1, typename T2>
+//__device__ static inline void scalar_typecast(const T1 a, T2 &b){b = a;}
+//
+//template <typename T>
+//__device__ static inline void scalar_typecast(const float a, T &b) { b = CUDAUTIL_FLOAT2INT(a);}
+//
+//// The following are special cases
+//__device__ static inline void scalar_typecast(const float a, half     &b) { b = CUDAUTIL_FLOAT2HALF(a);}
+//__device__ static inline void scalar_typecast(const half a,  float    &b) { b = CUDAUTIL_HALF2FLOAT(a);}
+//__device__ static inline void scalar_typecast(const float a, unsigned &b) { b = CUDAUTIL_FLOAT2UINT(a);}
 
 template <typename TMIN, typename TSUB, typename TRES>
 __device__ static inline TRES operator-(const TMIN minuend, const TSUB subtrahend) {
