@@ -113,7 +113,8 @@ __device__ static inline void make_cuComplex(const TREAL x, const TIMAG y, TCMPX
 class RealDataGeneratorUniform{
 public:
   float *d_data = NULL; ///< Uniform distributed random number in float on device
-
+  float *h_data = NULL; ///< Uniform distributed random number in float on host (if we need it on host)
+  
   //! Constructor of RealDataGeneratorUniform class.
   /*!
    * 
@@ -129,13 +130,16 @@ public:
    * \param[in] exclude The exclusive limit of uniform random numbers
    * \param[in] include The inclusive limit if uniform random numbers
    * \param[in] ndata   Number of float random numbers to generate
+   * \param[in] host    Marker to tell if we need a copy on host, default to 0
    */
-  RealDataGeneratorUniform(curandGenerator_t gen, int ndata, float exclude, float include, int nthread)
-    :gen(gen), ndata(ndata), exclude(exclude), include(include), nthread(nthread){
+ RealDataGeneratorUniform(curandGenerator_t gen, int ndata, float exclude, float include, int nthread, int host = 0)
+   :gen(gen), ndata(ndata), exclude(exclude), include(include), nthread(nthread), host(host){
 
+    int nbytes = ndata*sizeof(float);
+    
     range = include-exclude;
     
-    checkCudaErrors(cudaMalloc(&d_data, ndata * sizeof(float)));
+    checkCudaErrors(cudaMalloc(&d_data, nbytes));
     
     checkCudaErrors(curandGenerateUniform(gen, d_data, ndata));
         
@@ -143,6 +147,11 @@ public:
     nblock = (nblock>1)?nblock:1;
 
     cudautil_contraintor<<<nblock, nthread>>>(d_data, exclude, range, ndata);
+
+    if(host){
+      checkCudaErrors(cudaMallocHost(&h_data, nbytes));
+      checkCudaErrors(cudaMemcpy(h_data, d_data, nbytes, cudaMemcpyDeviceToHost));
+    }
   }
   
   //! Deconstructor of RealDataGeneratorUniform class.
@@ -152,15 +161,20 @@ public:
    */
   ~RealDataGeneratorUniform(){
     checkCudaErrors(cudaFree(d_data));
+    if(host){
+      checkCudaErrors(cudaFreeHost(h_data));
+    }
   }
     
 private:
   int ndata;   ///< Number of generated data
+  int nbytes; ///< Size of data in bytes
   float include;  ///< inclusive limit of random numbers
   float exclude;  ///< inclusive limit of random numbers
   float range;    ///< Range
   int nthread;    ///< Number of threads
   int nblock;     ///< Number of cuda blocks
+  int host;       ///< if we need a copy on host
   
   curandGenerator_t gen; ///< Generator to generate uniform distributed random numbers
 };
@@ -175,7 +189,7 @@ private:
 class RealDataGeneratorNormal{
 public:
   float *d_data = NULL; ///< Normal distributed random number in float on device
-
+  float *h_data = NULL; ///< Normal distributed random number in float on host (when required)
   //! Constructor of RealDataGeneratorNormal class.
   /*!
    * 
@@ -188,12 +202,19 @@ public:
    * \param[in] mean   Required mean for normal distributed random numbers
    * \param[in] stddev Required standard deviation for normal distributed random numbers
    * \param[in] ndata  Number of float random numbers to generate
+   * \param[in] host   Marker to tell if we need a copy on host, default to 0
    */
-  RealDataGeneratorNormal(curandGenerator_t gen, float mean, float stddev, int ndata)
-    :gen(gen), mean(mean), stddev(stddev), ndata(ndata){
-    checkCudaErrors(cudaMalloc(&d_data, ndata * sizeof(float)));
+ RealDataGeneratorNormal(curandGenerator_t gen, float mean, float stddev, int ndata, int host = 0)
+   :gen(gen), mean(mean), stddev(stddev), ndata(ndata), host(host){
+    nbytes = ndata*sizeof(float);
     
+    checkCudaErrors(cudaMalloc(&d_data, nbytes));    
     checkCudaErrors(curandGenerateNormal(gen, d_data, ndata, mean, stddev));
+
+    if(host){
+      checkCudaErrors(cudaMallocHost(&h_data, nbytes));
+      checkCudaErrors(cudaMemcpy(h_data, d_data, nbytes, cudaMemcpyDeviceToHost));
+    }
   }
   
   //! Deconstructor of RealDataGeneratorNormal class.
@@ -203,13 +224,18 @@ public:
    */
   ~RealDataGeneratorNormal(){
     checkCudaErrors(cudaFree(d_data));
+    if(host){
+      checkCudaErrors(cudaFreeHost(h_data));
+    }
   }
     
 private:
   float mean;  ///< Mean of generated data
   float stddev;///< Standard deviation of generated data
   int ndata;   ///< Number of generated data
-
+  int nbytes; ///< Number of bytes
+  int host;   ///< if we need a copy on host
+  
   curandGenerator_t gen; ///< Generator to generate normal distributed random numbers
 };
 
@@ -417,8 +443,8 @@ public:
     checkCudaErrors(cudaMalloc(&d_float2, ndata*sizeof(float)));
 
     checkCudaErrors(cudaMalloc(&d_reduction, nblock*sizeof(float)));
-    checkCudaErrors(cudaMallocHost(&d_sum, sizeof(float)));
-    checkCudaErrors(cudaMallocHost(&d_sum2, sizeof(float)));
+    checkCudaErrors(cudaMallocHost(&h_sum, sizeof(float)));
+    checkCudaErrors(cudaMallocHost(&h_sum2, sizeof(float)));
 
     cudautil_pow<<<nblock, nthread>>>(d_data, d_float, d_float2, ndata);
     getLastCudaError("Kernel execution failed [ cudautil_pow ]");
@@ -427,22 +453,22 @@ public:
     reduce(ndata,  nthread, nblock, method, d_float, d_reduction);
     if(nblock > 1){
       reduce(nblock, nthread, 1, method, d_reduction, d_float);
-      checkCudaErrors(cudaMemcpy(d_sum, d_float, sizeof(float), cudaMemcpyDeviceToHost));
+      checkCudaErrors(cudaMemcpy(h_sum, d_float, sizeof(float), cudaMemcpyDeviceToHost));
     }else{
-      checkCudaErrors(cudaMemcpy(d_sum, d_reduction, sizeof(float), cudaMemcpyDeviceToHost));
+      checkCudaErrors(cudaMemcpy(h_sum, d_reduction, sizeof(float), cudaMemcpyDeviceToHost));
     }
     
     // Second reduce mean power 2 data
     reduce(ndata,  nthread, nblock, method, d_float2, d_reduction);
     if(nblock > 1){
       reduce(nblock, nthread, 1, method, d_reduction, d_float2);
-      checkCudaErrors(cudaMemcpy(d_sum2, d_float2, sizeof(float), cudaMemcpyDeviceToHost));
+      checkCudaErrors(cudaMemcpy(h_sum2, d_float2, sizeof(float), cudaMemcpyDeviceToHost));
     }else{
-      checkCudaErrors(cudaMemcpy(d_sum2, d_reduction, sizeof(float), cudaMemcpyDeviceToHost));
+      checkCudaErrors(cudaMemcpy(h_sum2, d_reduction, sizeof(float), cudaMemcpyDeviceToHost));
     }
     
-    mean  = d_sum[0]/(float)ndata;
-    mean2 = d_sum2[0]/(float)ndata;
+    mean  = h_sum[0]/(float)ndata;
+    mean2 = h_sum2[0]/(float)ndata;
     
     stddev = sqrtf(mean2 - mean*mean);
   }
@@ -457,8 +483,8 @@ public:
     checkCudaErrors(cudaFree(d_float2));
     checkCudaErrors(cudaFree(d_reduction));
     
-    checkCudaErrors(cudaFreeHost(d_sum));
-    checkCudaErrors(cudaFreeHost(d_sum2));
+    checkCudaErrors(cudaFreeHost(h_sum));
+    checkCudaErrors(cudaFreeHost(h_sum2));
   }
   
 private:
@@ -474,8 +500,8 @@ private:
 
   float *d_reduction; ///< it holds intermediate float data duration data d_reduction on device
   
-  float *d_sum;  ///< d_sum of difference
-  float *d_sum2; ///< d_sum of difference power of 2
+  float *h_sum;  ///< h_sum of difference
+  float *h_sum2; ///< h_sum of difference power of 2
   float mean2; ///< mean of difference power of 2
 };
 
@@ -1025,7 +1051,7 @@ public:
    * \param[in] device Marker to tell if we also need a copy on device
    *
    */
- HostMemoryAllocator(int ndata, int device)
+ HostMemoryAllocator(int ndata, int device=0)
    :ndata(ndata), device(device){
     checkCudaErrors(cudaMallocHost(&h_data, ndata*sizeof(T)));
     if(device){
