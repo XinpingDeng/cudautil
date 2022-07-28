@@ -34,3 +34,21 @@ __global__ void cudautil_contraintor(float *data, float exclude, float range, in
     data[idx] = data[idx]*range+exclude;
   }
 }
+
+/*! 
+  n here is gridDim.x in previous kernel
+  We can also make it reuse global buffer here, but not sure speed difference by doing so
+  
+  //the kernel size here should be the same as previous gridDim.x size or larger
+*/
+__global__ void cudautil_histogram_final(const unsigned int *in, int n, unsigned int *out)
+{
+  // gridDim.x and blockDim.x should be enough to cover al bin index
+  int i = blockIdx.x * blockDim.x + threadIdx.x;
+  if (i < NUM_BINS) {
+    unsigned int total = 0;
+    for (int j = 0; j < n; j++) 
+      total += in[i + NUM_BINS * j];
+    out[i] = total;
+  }
+}
