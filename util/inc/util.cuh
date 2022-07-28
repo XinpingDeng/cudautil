@@ -395,8 +395,8 @@ template <typename TIN, typename TOUT>
  * \param[in]  ndata    Number of data
  * \param[out] d_float  Converted data in float
  * \param[out] d_float2 Power of converted data 
-*
-  */
+ *
+ */
 template <typename T>
 __global__ void cudautil_pow(const T *d_data, float *d_float, float *d_float2, int ndata){
   int idx = blockDim.x*blockIdx.x + threadIdx.x;
@@ -1011,39 +1011,56 @@ __global__ void cudautil_amplitude_phase(const T *v, float *amplitude, float *ph
 template <typename T>
 class AmplitudePhaseCalculator{
  public:
-  float *d_amp = NULL;///< Calculated amplitude on device
-  float *d_pha = NULL;///< Calculated phase on device
+  float *amp = NULL;///< Calculated amplitude on device
+  float *pha = NULL;///< Calculated phase on device
   
   //! Constructor of AmplitudePhaseCalculator class.
   /*!
    * 
    * - initialise the class
-     * - create device memory for amplitude and phase
-					      * - calculate phase and amplitude with CUDA
-					      *
-					      * \see cudautil_amplitude_phase
-					      *
-					      * \tparam TIN Input data type
-					      * 
-					      * \param[in] d_data  input Complex data
-					      * \param[in] ndata   Number of samples to be converted, the size of d_data is 2*ndata
-					      * \param[in] nthread Number of threads per CUDA block to run `cudautil_amplitude_phase` kernel
-					      *
-					      */
- AmplitudePhaseCalculator(T *d_data,
+   * - create device memory for amplitude and phase
+   * - calculate phase and amplitude with CUDA
+   *
+   * \see cudautil_amplitude_phase
+   *
+   * \tparam TIN Input data type
+   * 
+   * \param[in] raw  input Complex data
+   * \param[in] ndata   Number of samples to be converted, the size of data is 2*ndata
+   * \param[in] nthread Number of threads per CUDA block to run `cudautil_amplitude_phase` kernel
+   *
+   */
+ AmplitudePhaseCalculator(T *raw,
 			  int ndata,
 			  int nthread
 			  )
-   :d_data(d_data), ndata(ndata), nthread(nthread){
-    // Get other buffers
-    checkCudaErrors(cudaMalloc(&d_amp, ndata * sizeof(float)));
-    checkCudaErrors(cudaMalloc(&d_pha, ndata * sizeof(float)));
+   :ndata(ndata), nthread(nthread){
+
+    // sourt out input data
+    checkCudaErrors(cudaPointerGetAttributes(&attributes, raw));
+    type = attributes.type;
+
+    if(type == cudaMemoryTypeUnregistered || type == cudaMemoryTypeHost){
+      int nbytes = ndata*sizeof(T);
+      checkCudaErrors(cudaMalloc(&data, nbytes));
+      checkCudaErrors(cudaMemcpy(data, raw, nbytes, cudaMemcpyDefault));
+    }
+    else{
+      data = raw;
+    }
+    
+    // Get output buffer as managed
+    checkCudaErrors(cudaMallocManaged(&amp, ndata * sizeof(float), cudaMemAttachGlobal));
+    checkCudaErrors(cudaMallocManaged(&pha, ndata * sizeof(float), cudaMemAttachGlobal));
   
     // Get amplitude and phase
     nblock = ndata/nthread;
     nblock = (nblock>1)?nblock:1;
-    cudautil_amplitude_phase<<<nblock, nthread>>>(d_data, d_amp, d_pha, ndata);
+    cudautil_amplitude_phase<<<nblock, nthread>>>(data, amp, pha, ndata);
 
+    if(type == cudaMemoryTypeUnregistered || type == cudaMemoryTypeHost){
+      checkCudaErrors(cudaFree(data));
+    }
     checkCudaErrors(cudaDeviceSynchronize());
   }
   
@@ -1054,8 +1071,8 @@ class AmplitudePhaseCalculator{
    */
   ~AmplitudePhaseCalculator(){
     
-    checkCudaErrors(cudaFree(d_amp));
-    checkCudaErrors(cudaFree(d_pha));
+    checkCudaErrors(cudaFree(amp));
+    checkCudaErrors(cudaFree(pha));
 
     checkCudaErrors(cudaDeviceSynchronize());
   }
@@ -1065,7 +1082,10 @@ class AmplitudePhaseCalculator{
   int nblock; ///< Number of CUDA blocks
   int nthread; ///< number of threas per block
   
-  T *d_data; ///< To get hold on the input data
+  cudaPointerAttributes attributes; ///< to hold memory attributes
+  enum cudaMemoryType type; ///< memory type
+  
+  T *data; ///< To get hold on the input data
 };
 
 
@@ -1077,7 +1097,7 @@ class AmplitudePhaseCalculator{
 template <typename T>
 class DeviceMemoryAllocator {
  public:
-  T *d_data = NULL; ///< Device memory
+  T *data = NULL; ///< Device memory
   T *h_data = NULL; ///< Host memory
   
   /*! Constructor of class DeviceMemoryAllocator
@@ -1088,7 +1108,7 @@ class DeviceMemoryAllocator {
    */
  DeviceMemoryAllocator(int ndata, int host=0)
    :ndata(ndata), host(host){
-    checkCudaErrors(cudaMalloc(&d_data, ndata*sizeof(T)));
+    checkCudaErrors(cudaMalloc(&data, ndata*sizeof(T)));
     if(host){
       checkCudaErrors(cudaMallocHost(&h_data, ndata*sizeof(T)));
     }
@@ -1100,7 +1120,7 @@ class DeviceMemoryAllocator {
    * - free device memory at the class life end
    */
   ~DeviceMemoryAllocator(){
-    checkCudaErrors(cudaFree(d_data));
+    checkCudaErrors(cudaFree(data));
     if(host){
       checkCudaErrors(cudaFreeHost(h_data));
     }
@@ -1120,7 +1140,7 @@ class DeviceMemoryAllocator {
 template <typename T>
 class DeviceDataExtractor {
  public:
-  T *h_data = NULL; ///< Host buffer to hold data
+  T *data = NULL; ///< Host buffer to hold data
   
   /*!
    * \param[in] d_data Device data 
@@ -1131,8 +1151,8 @@ class DeviceDataExtractor {
    :d_data(d_data), ndata(ndata){
    
     size = ndata*sizeof(T);
-    checkCudaErrors(cudaMallocHost(&h_data, size));
-    checkCudaErrors(cudaMemcpy(h_data, d_data, size, cudaMemcpyDeviceToHost));
+    checkCudaErrors(cudaMallocHost(&data, size));
+    checkCudaErrors(cudaMemcpy(data, d_data, size, cudaMemcpyDefault));
   }
   
   //! Deconstructor of DeviceDataExtractor class.
@@ -1141,7 +1161,7 @@ class DeviceDataExtractor {
    * - free device memory at the class life end
    */
   ~DeviceDataExtractor(){
-    checkCudaErrors(cudaFreeHost(h_data));
+    checkCudaErrors(cudaFreeHost(data));
   }
   
  private:
@@ -1159,7 +1179,7 @@ class DeviceDataExtractor {
 template <typename T>
 class HostDataExtractor {
  public:
-  T *d_data = NULL; ///< Device buffer to hold data
+  T *data = NULL; ///< Device buffer to hold data
 
   /*! Constructor of class HostDataExtractor
    *
@@ -1171,8 +1191,8 @@ class HostDataExtractor {
    :h_data(h_data), ndata(ndata){
     
     size = ndata*sizeof(T);
-    checkCudaErrors(cudaMalloc(&d_data, size));
-    checkCudaErrors(cudaMemcpy(d_data, h_data, size, cudaMemcpyHostToDevice));
+    checkCudaErrors(cudaMalloc(&data, size));
+    checkCudaErrors(cudaMemcpy(data, h_data, size, cudaMemcpyDefault));
   }
   
   //! Deconstructor of HostDataExtractor class.
@@ -1181,7 +1201,7 @@ class HostDataExtractor {
    * - free device memory at the class life end
    */
   ~HostDataExtractor(){
-    checkCudaErrors(cudaFree(d_data));
+    checkCudaErrors(cudaFree(data));
   }
   
  private:
@@ -1199,7 +1219,7 @@ class HostDataExtractor {
 template <typename T>
 class HostMemoryAllocator {
  public:
-  T *h_data = NULL; ///< Host memory
+  T *data = NULL; ///< Host memory
   T *d_data = NULL; ///< Device memory
   
   /*! Constructor of class HostMemoryAllocator
@@ -1210,7 +1230,7 @@ class HostMemoryAllocator {
    */
  HostMemoryAllocator(int ndata, int device=0)
    :ndata(ndata), device(device){
-    checkCudaErrors(cudaMallocHost(&h_data, ndata*sizeof(T)));
+    checkCudaErrors(cudaMallocHost(&data, ndata*sizeof(T)));
     if(device){
       checkCudaErrors(cudaMalloc(&d_data, ndata*sizeof(T)));
     }
@@ -1222,7 +1242,7 @@ class HostMemoryAllocator {
    * - free host memory at the class life end
    */
   ~HostMemoryAllocator(){
-    checkCudaErrors(cudaFreeHost(h_data));
+    checkCudaErrors(cudaFreeHost(data));
     if(device){
       checkCudaErrors(cudaFree(d_data));
     }
