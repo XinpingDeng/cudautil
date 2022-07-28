@@ -1337,15 +1337,15 @@ class RealDataHistogram{
       input = raw;
     }
     // Create output buffer as managed
-    checkCudaErrors(cudaMallocManaged(&data, ndata*sizeof(unsigned), cudaMemAttachGlobal));
+    checkCudaErrors(cudaMallocManaged(&data, NUM_BINS*sizeof(unsigned), cudaMemAttachGlobal));
 
     // Setup kernel size and run it to get bin
     dim3 grid_smem(nblock);  // Do not want have too many blocks
     dim3 grid_final(nblock/nthread);
     
-    checkCudaErrors(cudaMalloc(&result, nblock*sizeof(unsigned)));
-      
-    cudautil_histogram<<<grid_smem, nthread>>>(input, ndata, result);
+    checkCudaErrors(cudaMalloc(&result, nblock*NUM_BINS*sizeof(unsigned)));
+    
+    cudautil_histogram<<<grid_smem, nthread>>>(input, ndata, min, max, result);
     getLastCudaError("Kernel execution failed [ cudautil_histogram ]");
     cudautil_histogram_final<<<grid_final, nthread>>>(result, nblock, data);
     getLastCudaError("Kernel execution failed [ cudautil_histogram_final ]");
