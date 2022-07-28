@@ -132,15 +132,19 @@ class RealDataGeneratorUniform{
    */
  RealDataGeneratorUniform(curandGenerator_t gen, int ndata, float exclude, float include, int nthread)
    :gen(gen), ndata(ndata), exclude(exclude), include(include), nthread(nthread){
-    
+
+    // Figure out range
     range = include-exclude;
 
-    checkCudaErrors(cudaMallocManaged (&data, ndata*sizeof(float), cudaMemAttachGlobal));
+    // Create output buffer as managed
+    checkCudaErrors(cudaMallocManaged(&data, ndata*sizeof(float), cudaMemAttachGlobal));
+
+    // Generate data
     checkCudaErrors(curandGenerateUniform(gen, data, ndata));
-        
+
+    // Setup kernel size and run it to convert to a given range
     nblock = ndata/nthread;
     nblock = (nblock>1)?nblock:1;
-
     cudautil_contraintor<<<nblock, nthread>>>(data, exclude, range, ndata);
   }
   
@@ -188,9 +192,13 @@ class RealDataGeneratorNormal{
    * \param[in] stddev Required standard deviation for normal distributed random numbers
    * \param[in] ndata  Number of float random numbers to generate
    */
-  RealDataGeneratorNormal(curandGenerator_t gen, float mean, float stddev, int ndata)
+ RealDataGeneratorNormal(curandGenerator_t gen, float mean, float stddev, int ndata)
    :gen(gen), mean(mean), stddev(stddev), ndata(ndata){
-    checkCudaErrors(cudaMallocManaged (&data, ndata*sizeof(float), cudaMemAttachGlobal));
+
+    // Create output buffer
+    checkCudaErrors(cudaMallocManaged(&data, ndata*sizeof(float), cudaMemAttachGlobal));
+
+    // Generate normal data
     checkCudaErrors(curandGenerateNormal(gen, data, ndata, mean, stddev));
   }
   
@@ -285,8 +293,7 @@ template <typename TIN, typename TOUT>
 template <typename TIN, typename TOUT>
   class RealDataConvertor{
  public:
-  TOUT *d_converted_data = NULL; ///< Converted data on device as \p TOUT data type
-  TOUT *h_converted_data = NULL; ///< Converted data on host as \p TOUT data type
+  TOUT *data = NULL; ///< Converted data on Unified memory
   
   //! Constructor of RealDataConvertor class.
   /*!
@@ -299,52 +306,65 @@ template <typename TIN, typename TOUT>
    *
    * \tparam TIN Input data type
    * 
-   * \param[in] d_data  Data to be converted with data type \p TIN on device
+   * \param[in] raw     Data to be converted with data type \p TIN on device or host
    * \param[in] ndata   Number of data points ton be converted
    * \param[in] nthread Number of threads per CUDA block to run `cudautil_convert` kernel
-   * \param[in] host    Marker to see if we need data on host, default to 0
    *
    */
- RealDataConvertor(TIN *d_data, int ndata, int nthread, int host = 0)
-   :d_data(d_data), ndata(ndata), nthread(nthread), host(host){
+ RealDataConvertor(TIN *raw, int ndata, int nthread)
+   :ndata(ndata), nthread(nthread){
 
-    nbytes = ndata*sizeof(TOUT);
-    
-    checkCudaErrors(cudaMalloc(&d_converted_data, nbytes));
-    
+    /* Sort out input buffers */
+    // Check if the input data in on device or managed or on host
+    // It can be
+    // cudaMemoryTypeUnregistered for unregistered host memory,
+    // cudaMemoryTypeHost for registered host memory,
+    // cudaMemoryTypeDevice for device memory or
+    // cudaMemoryTypeManaged for managed memory.
+    checkCudaErrors(cudaPointerGetAttributes(&attributes, raw));
+    type = attributes.type;
+
+    if(type == cudaMemoryTypeUnregistered || type == cudaMemoryTypeHost){
+      int nbytes = ndata*sizeof(TIN);
+      checkCudaErrors(cudaMalloc(&input, nbytes));
+      checkCudaErrors(cudaMemcpy(input, raw, nbytes, cudaMemcpyDefault));
+    }
+    else{
+      input = raw;
+    }
+
+    // Create output buffer as managed
+    checkCudaErrors(cudaMallocManaged(&data, ndata*sizeof(TOUT), cudaMemAttachGlobal));
+
+    // Setup kernel size and run it to convert data
     nblock = ndata/nthread;
-    nblock = (nblock>1)?nblock:1;
-
-    cudautil_convert<<<nblock, nthread>>>(d_data, d_converted_data, ndata);
+    nblock = (nblock>1)?nblock:1;    
+    cudautil_convert<<<nblock, nthread>>>(input, data, ndata);
     getLastCudaError("Kernel execution failed [ cudautil_convert ]");
 
-    if(host){
-      checkCudaErrors(cudaMallocHost(&h_converted_data, nbytes));
-      checkCudaErrors(cudaMemcpy(h_converted_data, d_converted_data, nbytes, cudaMemcpyDeviceToHost));
+    // Free intermediate memory
+    if(type == cudaMemoryTypeUnregistered || type == cudaMemoryTypeHost){
+      checkCudaErrors(cudaFree(input));
     }
   }
-
   
-  //! Deconstructor of RealDataGeneratorNormal class.
+  //! Deconstructor of RealDataConvertor class.
   /*!
    * 
    * - free device memory at the class life end
    */
   ~RealDataConvertor(){  
-    checkCudaErrors(cudaFree(d_converted_data));
-    if(host){
-      checkCudaErrors(cudaFreeHost(h_converted_data));
-    }
+    checkCudaErrors(cudaFree(data));
   }
   
  private:
-  TIN *d_data = NULL; ///< An internal pointer to input data
+  cudaPointerAttributes attributes; ///< to hold memory attributes
+  enum cudaMemoryType type; ///< memory type
+  TIN *input = NULL; ///< An internal pointer to input data
   int ndata;   ///< Number of generated data
   int nthread; ///< Number of threads per CUDA block
   int nblock;  ///< Number of blocks to process \p ndata
-  int nbytes;  ///< number of bytes for output data
-  int host;    ///< marker to see if we need data on host
-					  };
+};
 
 
 /*! \brief A function to convert input data from \p T to float and calculate its power in parallel on GPU
@@ -356,20 +376,20 @@ template <typename TIN, typename TOUT>
  * \see scalar_typecast
  *
  * The supported data convertation is shown in the following table (we can add more support here later)
-  *
-  * |T      |
-  * |-------|
-  * |double |
-  * |half   |
-  * |int    |
-  * |int16_t|
-  * |int8_t |
-  *
-  * \param[in]  d_data   Input data
-  * \param[in]  ndata    Number of data
-  * \param[out] d_float  Converted data in float
-  * \param[out] d_float2 Power of converted data 
-  *
+ *
+ * |T      |
+ * |-------|
+ * |double |
+ * |half   |
+ * |int    |
+ * |int16_t|
+ * |int8_t |
+ *
+ * \param[in]  d_data   Input data
+ * \param[in]  ndata    Number of data
+ * \param[out] d_float  Converted data in float
+ * \param[out] d_float2 Power of converted data 
+*
   */
 template <typename T>
 __global__ void cudautil_pow(const T *d_data, float *d_float, float *d_float2, int ndata){
@@ -400,7 +420,7 @@ class RealDataMeanStddevCalcultor {
    * - reduce the float data and its power to get mean
    * - calculate standard deviation with the mean of float and power data
    *
-   * \param[in] d_data  The input vector on device with data type \p T
+   * \param[in] raw     The input vector on device/host with data type \p T
    * \param[in] ndata   Number of data
    * \param[in] nthread Number of threads per CUDA block to run kernel `cudautil_pow`
    * \param[in] method  Data reduction method, which can be from 0 to 7 inclusive
@@ -418,44 +438,77 @@ class RealDataMeanStddevCalcultor {
    * \see cudautil_pow, reduce, scalar_typecast
    *
    */
- RealDataMeanStddevCalcultor(T *d_data, int ndata, int nthread, int method)
-   :d_data(d_data), ndata(ndata), nthread(nthread), method(method){
+ RealDataMeanStddevCalcultor(T *raw, int ndata, int nthread, int method)
+   :ndata(ndata), nthread(nthread), method(method){
+
+    /* Sort out input buffers */
+    // Check if the input data in on device or managed or on host
+    // It can be
+    // cudaMemoryTypeUnregistered for unregistered host memory,
+    // cudaMemoryTypeHost for registered host memory,
+    // cudaMemoryTypeDevice for device memory or
+    // cudaMemoryTypeManaged for managed memory.
+    checkCudaErrors(cudaPointerGetAttributes(&attributes, raw));
+    type = attributes.type;
     
+    if(type == cudaMemoryTypeUnregistered || type == cudaMemoryTypeHost){
+      int nbytes = ndata*sizeof(T);
+      checkCudaErrors(cudaMalloc(&data, nbytes));
+      checkCudaErrors(cudaMemcpy(data, raw, nbytes, cudaMemcpyDefault));
+    }
+    else{
+      data = raw;
+    }
+    
+    // Now do calculation
     nblock = ndata/nthread;
     nblock = (nblock>1)?nblock:1;
     
-    checkCudaErrors(cudaMalloc(&d_float, ndata*sizeof(float)));
+    checkCudaErrors(cudaMalloc(&d_float,  ndata*sizeof(float)));
     checkCudaErrors(cudaMalloc(&d_float2, ndata*sizeof(float)));
-
+    
     checkCudaErrors(cudaMalloc(&d_reduction, nblock*sizeof(float)));
-    checkCudaErrors(cudaMallocHost(&h_sum, sizeof(float)));
+    checkCudaErrors(cudaMallocHost(&h_sum,  sizeof(float)));
     checkCudaErrors(cudaMallocHost(&h_sum2, sizeof(float)));
-
-    cudautil_pow<<<nblock, nthread>>>(d_data, d_float, d_float2, ndata);
+    
+    cudautil_pow<<<nblock, nthread>>>(data, d_float, d_float2, ndata);
     getLastCudaError("Kernel execution failed [ cudautil_pow ]");
     
     // First reduce mean data
     reduce(ndata,  nthread, nblock, method, d_float, d_reduction);
     if(nblock > 1){
       reduce(nblock, nthread, 1, method, d_reduction, d_float);
-      checkCudaErrors(cudaMemcpy(h_sum, d_float, sizeof(float), cudaMemcpyDeviceToHost));
+      checkCudaErrors(cudaMemcpy(h_sum, d_float,     sizeof(float), cudaMemcpyDefault));
     }else{
-      checkCudaErrors(cudaMemcpy(h_sum, d_reduction, sizeof(float), cudaMemcpyDeviceToHost));
+      checkCudaErrors(cudaMemcpy(h_sum, d_reduction, sizeof(float), cudaMemcpyDefault));
     }
     
     // Second reduce mean power 2 data
     reduce(ndata,  nthread, nblock, method, d_float2, d_reduction);
     if(nblock > 1){
       reduce(nblock, nthread, 1, method, d_reduction, d_float2);
-      checkCudaErrors(cudaMemcpy(h_sum2, d_float2, sizeof(float), cudaMemcpyDeviceToHost));
+      checkCudaErrors(cudaMemcpy(h_sum2, d_float2,    sizeof(float), cudaMemcpyDefault));
     }else{
-      checkCudaErrors(cudaMemcpy(h_sum2, d_reduction, sizeof(float), cudaMemcpyDeviceToHost));
+      checkCudaErrors(cudaMemcpy(h_sum2, d_reduction, sizeof(float), cudaMemcpyDefault));
     }
-    
+
+    // Got final numbers
     mean  = h_sum[0]/(float)ndata;
-    mean2 = h_sum2[0]/(float)ndata;
-    
+    mean2 = h_sum2[0]/(float)ndata;    
     stddev = sqrtf(mean2 - mean*mean);
+
+    // As we only need stddev and mean
+    // Probably better to free all memory here
+    checkCudaErrors(cudaFree(d_float));
+    checkCudaErrors(cudaFree(d_float2));
+    checkCudaErrors(cudaFree(d_reduction));
+    
+    checkCudaErrors(cudaFreeHost(h_sum));
+    checkCudaErrors(cudaFreeHost(h_sum2));
+    
+    if(type == cudaMemoryTypeUnregistered || type == cudaMemoryTypeHost){
+      checkCudaErrors(cudaFree(data));
+    }
   }
   
   //! Deconstructor of RealDataMeanStddevCalcultor class.
@@ -464,22 +517,18 @@ class RealDataMeanStddevCalcultor {
    * - free device memory at the class life end
    */
   ~RealDataMeanStddevCalcultor(){
-    checkCudaErrors(cudaFree(d_float));
-    checkCudaErrors(cudaFree(d_float2));
-    checkCudaErrors(cudaFree(d_reduction));
-    
-    checkCudaErrors(cudaFreeHost(h_sum));
-    checkCudaErrors(cudaFreeHost(h_sum2));
   }
   
  private:
+  cudaPointerAttributes attributes; ///< to hold memory attributes
+  enum cudaMemoryType type; ///< memory type
 
   int ndata; ///< Number of input data
   int nthread; ///< Number of threads per CUDA block
   int nblock;  ///< Number of CUDA blocks
   int method; ///< data d_reduction method
   
-  T *d_data = NULL;
+  T *data = NULL;
   float *d_float = NULL;
   float *d_float2 = NULL;
 
@@ -544,34 +593,66 @@ template <typename T1, typename T2>
   class RealDataDifferentiator {
 
  public:
-  float *d_diff  = NULL;  ///< the difference between input \p d_data1 and \p d_data2
+  float *data  = NULL;  ///< the difference between input \p data1 and \p data2
   
   //! Constructor of RealDataDifferentiator class.
   /*!
    * 
    * - initialise the class
-   * - create device memory for the difference \p d_diff
+   * - create device memory for the difference \p diff
    * - calculate the difference with a CUDA kernel `cudautil_subtract`
    *
    * \see cudautil_subtract, scalar_subtract
    * 
-   * \param[in] d_data1 The first input real vector
-   * \param[in] d_data2 The second input real vector
-   * \param[in] ndata   Number of float random numbers to generate
-   * \param[in] nthread Number of threads per CUDA block to run `cudautil_convert`
+   * \param[in] raw1 The first input real vector
+   * \param[in] raw2 The second input real vector
+   * \param[in] ndata   Number of data to subtract
+   * \param[in] nthread Number of threads per CUDA block to run `cudautil_subtract`
    *
    */
- RealDataDifferentiator(T1 *d_data1, T2 *d_data2, int ndata, int nthread)
-   :d_data1(d_data1), d_data2(d_data2), ndata(ndata), nthread(nthread){
+ RealDataDifferentiator(T1 *raw1, T2 *raw2, int ndata, int nthread)
+   :ndata(ndata), nthread(nthread){
+
+    // sort out input buffers
+    checkCudaErrors(cudaPointerGetAttributes(&attributes1, raw1));
+    checkCudaErrors(cudaPointerGetAttributes(&attributes2, raw2));
+    type1 = attributes1.type;
+    type2 = attributes2.type;
     
-    // Now get memory for \p diff 
+    if(type1 == cudaMemoryTypeUnregistered || type1 == cudaMemoryTypeHost){
+      int nbytes = ndata*sizeof(T1);
+      checkCudaErrors(cudaMalloc(&data1, nbytes));
+      checkCudaErrors(cudaMemcpy(data1, raw1, nbytes, cudaMemcpyDefault));
+    }
+    else{
+      data1 = raw1;
+    }
+    
+    if(type2 == cudaMemoryTypeUnregistered || type2 == cudaMemoryTypeHost){
+      int nbytes = ndata*sizeof(T2);
+      checkCudaErrors(cudaMalloc(&data2, nbytes));
+      checkCudaErrors(cudaMemcpy(data2, raw2, nbytes, cudaMemcpyDefault));
+    }
+    else{
+      data2 = raw2;
+    }
+
+    // Create output buffer as managed
+    checkCudaErrors(cudaMallocManaged(&data, ndata*sizeof(float), cudaMemAttachGlobal));
+    
+    // setup kernel size and run it to get difference
     nblock = ndata/nthread;
     nblock = (nblock>1)?nblock:1;
-    checkCudaErrors(cudaMalloc(&d_diff,  ndata*sizeof(float)));
-    
-    // Now get difference
-    cudautil_subtract<<<nblock, nthread>>>(d_data1, d_data2, d_diff, ndata);
+    cudautil_subtract<<<nblock, nthread>>>(data1, data2, data, ndata);
     getLastCudaError("Kernel execution failed [ cudautil_subtract ]");
+
+    // Free intermediate memory
+    if(type1 == cudaMemoryTypeUnregistered || type1 == cudaMemoryTypeHost){
+      checkCudaErrors(cudaFree(data1));
+    }
+    if(type2 == cudaMemoryTypeUnregistered || type2 == cudaMemoryTypeHost){
+      checkCudaErrors(cudaFree(data2));
+    }
   }
   
   //! Deconstructor of RealDataDifferentiator class.
@@ -580,18 +661,21 @@ template <typename T1, typename T2>
    * - free device memory at the class life end
    */
   ~RealDataDifferentiator(){
-    
-    checkCudaErrors(cudaFree(d_diff));
+    checkCudaErrors(cudaFree(data));
   }
   
  private:
+  cudaPointerAttributes attributes1; ///< to hold memory attributes
+  cudaPointerAttributes attributes2; ///< to hold memory attributes
+  enum cudaMemoryType type1; ///< memory type
+  enum cudaMemoryType type2; ///< memory type
 
   int ndata; ///< Number of input data
   int nthread; ///< Number of threads per CUDA block
   int nblock;  ///< Number of CUDA blocks
 
-  T1 *d_data1 = NULL; ///< private variable to hold input vector pointer 1
-  T2 *d_data2 = NULL; ///< private variable to hold input vector pointer 2
+  T1 *data1 = NULL; ///< private variable to hold input vector pointer 1
+  T2 *data2 = NULL; ///< private variable to hold input vector pointer 2
 };
 
 //! A template kernel to build complex numbers with its real and imag part
@@ -651,14 +735,14 @@ template <typename TREAL, typename TIMAG, typename TCMPX>
 template <typename TREAL, typename TIMAG, typename TCMPX>
   class ComplexDataBuilder {
  public:
-  TCMPX *d_cmpx = NULL; ///< Complex data on device
+  TCMPX *data = NULL; ///< Complex data on device
   
   //! Constructor of ComplexDataBuilder class.
   /*!
    * 
    * - initialise the class
    * - create device memory for \p ndata complex numbers
-   * - build complex numbers with \p d_real and \p d_imag
+   * - build complex numbers with \p real and \p imag
    *
    * \see cudautil_complexbuilder, scalar_typecast
    *
@@ -666,21 +750,57 @@ template <typename TREAL, typename TIMAG, typename TCMPX>
    * \tparam TIMAG Imag part data type
    * \tparam TCMPX Complex data type
    * 
-   * \param[in] d_real  Real part to build complex numbers
-   * \param[in] d_imag  Imag part to build complex numbers
+   * \param[in] real  Real part to build complex numbers
+   * \param[in] imag  Imag part to build complex numbers
    * \param[in] ndata   Number of data points ton be converted
    * \param[in] nthread Number of threads per CUDA block to run `cudautil_complexbuilder` kernel
    *
    */
- ComplexDataBuilder(TREAL *d_real, TIMAG *d_imag, int ndata, int nthread )
-   :d_real(d_real), d_imag(d_imag), ndata(ndata), nthread(nthread){
-    checkCudaErrors(cudaMalloc(&d_cmpx, ndata*sizeof(TCMPX)));
+ ComplexDataBuilder(TREAL *real, TIMAG *imag, int ndata, int nthread )
+   :ndata(ndata), nthread(nthread){
 
+    // Sort out input data
+    checkCudaErrors(cudaPointerGetAttributes(&attributes_real, real));
+    type_real = attributes_real.type;
+
+    if(type_real == cudaMemoryTypeUnregistered || type_real == cudaMemoryTypeHost){
+      int nbytes = ndata*sizeof(TREAL);
+      checkCudaErrors(cudaMalloc(&data_real, nbytes));
+      checkCudaErrors(cudaMemcpy(data_real, real, nbytes, cudaMemcpyDefault));
+    }
+    else{
+      data_real = real;
+    }
+    
+    checkCudaErrors(cudaPointerGetAttributes(&attributes_imag, imag));
+    type_imag = attributes_imag.type;
+
+    if(type_imag == cudaMemoryTypeUnregistered || type_imag == cudaMemoryTypeHost){
+      int nbytes = ndata*sizeof(TIMAG);
+      checkCudaErrors(cudaMalloc(&data_imag, nbytes));
+      checkCudaErrors(cudaMemcpy(data_imag, imag, nbytes, cudaMemcpyDefault));
+    }
+    else{
+      data_imag = imag;
+    }
+
+    // Create output buffer
+    checkCudaErrors(cudaMallocManaged(&data, ndata*sizeof(TCMPX), cudaMemAttachGlobal));
+
+    // Setup kernel size and run it 
     nblock = ndata/nthread;
     nblock = (nblock>1)?nblock:1;
     
-    cudautil_complexbuilder<<<nblock, nthread>>>(d_real, d_imag, d_cmpx, ndata);
+    cudautil_complexbuilder<<<nblock, nthread>>>(data_real, data_imag, data, ndata);
     getLastCudaError("Kernel execution failed [ cudautil_complexbuilder ]");
+
+    // Free intermediate memory
+    if(type_imag == cudaMemoryTypeUnregistered || type_imag == cudaMemoryTypeHost){
+      checkCudaErrors(cudaFree(data_imag));
+    }
+    if(type_real == cudaMemoryTypeUnregistered || type_real == cudaMemoryTypeHost){
+      checkCudaErrors(cudaFree(data_real));
+    }    
   }
   
   //! Deconstructor of ComplexDataBuilder class.
@@ -689,12 +809,17 @@ template <typename TREAL, typename TIMAG, typename TCMPX>
    * - free device memory at the class life end
    */
   ~ComplexDataBuilder(){
-    checkCudaErrors(cudaFree(d_cmpx));
+    checkCudaErrors(cudaFree(data));
   }
   
  private:
-  TREAL *d_real = NULL;
-  TIMAG *d_imag = NULL;
+  TREAL *data_real = NULL;
+  TIMAG *data_imag = NULL;
+
+  cudaPointerAttributes attributes_real; ///< to hold memory attributes
+  cudaPointerAttributes attributes_imag; ///< to hold memory attributes
+  enum cudaMemoryType type_real; ///< memory type
+  enum cudaMemoryType type_imag; ///< memory type
   
   int ndata;
   int nthread;
@@ -850,18 +975,18 @@ class AmplitudePhaseCalculator{
   /*!
    * 
    * - initialise the class
-   * - create device memory for amplitude and phase
-   * - calculate phase and amplitude with CUDA
-   *
-   * \see cudautil_amplitude_phase
-   *
-   * \tparam TIN Input data type
-   * 
-   * \param[in] d_data  input Complex data
-   * \param[in] ndata   Number of samples to be converted, the size of d_data is 2*ndata
-   * \param[in] nthread Number of threads per CUDA block to run `cudautil_amplitude_phase` kernel
-   *
-   */
+     * - create device memory for amplitude and phase
+					      * - calculate phase and amplitude with CUDA
+					      *
+					      * \see cudautil_amplitude_phase
+					      *
+					      * \tparam TIN Input data type
+					      * 
+					      * \param[in] d_data  input Complex data
+					      * \param[in] ndata   Number of samples to be converted, the size of d_data is 2*ndata
+					      * \param[in] nthread Number of threads per CUDA block to run `cudautil_amplitude_phase` kernel
+					      *
+					      */
  AmplitudePhaseCalculator(T *d_data,
 			  int ndata,
 			  int nthread
