@@ -10,6 +10,8 @@
 
 #include <catch2/catch_test_macros.hpp>
 
+#define STRLEN 256
+
 using namespace std;
 
 int find_maxmin(float *data, float &datamin, float &datamax, int ndata){
@@ -27,7 +29,7 @@ int find_maxmin(float *data, float &datamin, float &datamax, int ndata){
 
 int create_x(float xmin, float xmax, int ndata, float *x){
   
-  for(int i = 0; i < NUM_BINS; i++){
+  for(int i = 0; i < ndata; i++){
     x[i] = xmin + i*(xmax-xmin)/(float)ndata;
   }
   
@@ -39,6 +41,42 @@ int create_y(unsigned *y_int, float *y_float, int ndata){
   for(int i = 0; i < ndata; i++){
     y_float[i] = y_int[i];
   }
+  
+  return EXIT_SUCCESS;
+}
+
+int plotit(unsigned *data, float min, float max, char *device, char *title){
+
+  float x[NUM_BINS];
+  float y[NUM_BINS];
+  create_x(min, max, NUM_BINS, x);
+  create_y(data, y, NUM_BINS);
+
+  float ymax;
+  float ymin;
+  find_maxmin(y, ymin, ymax, NUM_BINS);
+  
+  /* Open graphics device. */
+  if (cpgopen(device) < 1){
+    //if (cpgopen("/xw") < 1){
+    fprintf(stderr, "Can not open device to plot\n");
+    exit(1);
+  }
+
+  /* Get rid of  Press RETURN for next page:  */
+  cpgask(0);
+
+  /* Axis ranges */
+  cpgenv(x[0], x[NUM_BINS-1], ymin, ymax, 0, 0);
+
+  /* Label the axes (note use of \\u and \\d for raising exponent). */
+  cpglab("Sample Value", "Number of Samples", title);
+
+  /* plot histogram */
+  cpgpt(NUM_BINS, x, y, 1);
+
+  /* Close plot figure */
+  cpgclos();
   
   return EXIT_SUCCESS;
 }
@@ -80,36 +118,11 @@ TEST_CASE("RealDataGeneratorUniform", "RealDataGeneratorUniform") {
   cout << "elapsed time is " << gtime << " milliseconds" << endl;
   
   // plot histogram
-  float x[NUM_BINS];
-  float y[NUM_BINS];
-  create_x(min, max, NUM_BINS, x);
-  create_y(histogram.data, y, NUM_BINS);
-
-  float ymax;
-  float ymin;
-  find_maxmin(y, ymin, ymax, NUM_BINS);
-  
-  /* Open graphics device. */
-  if (cpgopen("uniform.ps/ps") < 1){
-    //if (cpgopen("/xw") < 1){
-    fprintf(stderr, "Can not open device to plot\n");
-    exit(1);
-  }
-
-  /* Get rid of  Press RETURN for next page:  */
-  cpgask(0);
-
-  /* Axis ranges */
-  cpgenv(x[0], x[NUM_BINS-1], ymin, ymax, 0, 0);
-
-  /* Label the axes (note use of \\u and \\d for raising exponent). */
-  cpglab("Sample Value", "Number of Samples", "Uniform distribution");
-
-  /* plot histogram */
-  cpgpt(NUM_BINS, x, y, 1);
-
-  /* Close plot figure */
-  cpgclos(); 
+  char device[STRLEN];
+  char title[STRLEN];
+  strcpy(device, "uniform.ps/ps");
+  strcpy(title,  "Uniform Distribution");
+  plotit(histogram.data, min, max, device, title);
 }    
 
 TEST_CASE("RealDataGeneratorNormal", "RealDataGeneratorNormal") {
@@ -149,34 +162,9 @@ TEST_CASE("RealDataGeneratorNormal", "RealDataGeneratorNormal") {
   cout << "elapsed time is " << gtime << " milliseconds" << endl;
   
   // plot histogram
-  float x[NUM_BINS];
-  float y[NUM_BINS];
-  create_x(min, max, NUM_BINS, x);
-  create_y(histogram.data, y, NUM_BINS);
-
-  float ymax;
-  float ymin;
-  find_maxmin(y, ymin, ymax, NUM_BINS);
-  
-  /* Open graphics device. */
-  if (cpgopen("normal.ps/ps") < 1){
-    //if (cpgopen("/xw") < 1){
-    fprintf(stderr, "Can not open device to plot\n");
-    exit(1);
-  }
-
-  /* Get rid of  Press RETURN for next page:  */
-  cpgask(0);
-
-  /* Axis ranges */
-  cpgenv(x[0], x[NUM_BINS-1], ymin, ymax, 0, 0);
-
-  /* Label the axes (note use of \\u and \\d for raising exponent). */
-  cpglab("Sample Value", "Number of Samples", "Normal distribution");
-
-  /* plot histogram */
-  cpgpt(NUM_BINS, x, y, 1);
-
-  /* Close plot figure */
-  cpgclos(); 
+  char device[STRLEN];
+  char title[STRLEN];
+  strcpy(device, "normal.ps/ps");
+  strcpy(title,  "Normal Distribution");
+  plotit(histogram.data, min, max, device, title);
 }
