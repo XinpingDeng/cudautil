@@ -2,8 +2,8 @@
 #define _GNU_SOURCE
 #endif
 
-#include "cudautil.h"
-#include "reduction_kernel.h"
+#include "util.cuh"
+#include "reduction.cuh"
 
 int print_cuda_memory_info() {
   //cudaError_t status;

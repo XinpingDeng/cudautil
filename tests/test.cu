@@ -2,12 +2,10 @@
 #define _GNU_SOURCE
 #endif
 
-#include "util.h"
-#include "cudautil.h"
+#include "util.hpp"
+#include "util.cuh"
 
 #include <catch2/catch_test_macros.hpp>
-
-#include <iostream>
 
 TEST_CASE("cuComplex_divide", "cuComplex_divide") {
 
@@ -17,4 +15,6 @@ TEST_CASE("cuComplex_divide", "cuComplex_divide") {
   cuComplex a = {10.0, 10.0};
 
   cuComplex c = a/b;
+
+  std::cout << a << std::endl;
 }    

@@ -2,8 +2,8 @@
 #define _UTIL_UTIL_H
 
 #define __STDC_FORMAT_MACROS
-#include <inttypes.h>
 
+#include <inttypes.h>
 #include <stdlib.h>
 #include <stdio.h>
 #include <stdbool.h>
@@ -44,4 +44,4 @@ extern "C" {
 }
 #endif
 
-#endif// _UTIL_H
+#endif /* _UTIL_UTIL_H */

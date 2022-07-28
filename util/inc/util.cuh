@@ -1,5 +1,5 @@
-#ifndef _UTIL_CUDAUTIL_H
-#define _UTIL_CUDAUTIL_H
+#ifndef _UTIL_UTIL_CUH
+#define _UTIL_UTIL_CUH
 
 #include <cuComplex.h>
 #include <cuda_fp16.h>
@@ -34,6 +34,12 @@ extern "C" {
 }
 #endif
 
+#include <iostream>
+static inline std::ostream& operator<<(std::ostream& os, const cuComplex& data){
+  os << data.x << ' ' << data.y << ' ';
+  return os;
+}
+
 __device__ __host__ static inline cuComplex operator*(cuComplex a, float b) { return make_cuComplex(a.x*b, a.y*b);}
 __device__ __host__ static inline cuComplex operator*(float a, cuComplex b) { return make_cuComplex(b.x*a, b.y*a);}
 __device__ __host__ static inline cuComplex operator/(cuComplex a, float b) { return make_cuComplex(a.x/b, a.y/b);}
@@ -41,7 +47,7 @@ __device__ __host__ static inline void operator/=(cuComplex &a, float b)     { a
 __device__ __host__ static inline void operator+=(cuComplex &a, cuComplex b) { a.x+=b.x; a.y+=b.y;}
 __device__ __host__ static inline void operator-=(cuComplex &a, cuComplex b) { a.x-=b.x; a.y-=b.y;}
 
-#include "reduction_kernel.h"
+#include "reduction.cuh"
 #define CUDAUTIL_FLOAT2HALF __float2half
 #define CUDAUTIL_FLOAT2INT  __float2int_rz
 #define CUDAUTIL_FLOAT2UINT __float2uint_rz
