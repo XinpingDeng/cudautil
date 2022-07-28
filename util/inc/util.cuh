@@ -87,15 +87,14 @@ __device__ static inline void scalar_typecast(const unsigned a, float &b) { b = 
 //__device__ static inline void scalar_typecast(const float a, unsigned &b) { b = CUDAUTIL_FLOAT2UINT(a);}
 
 template <typename TMIN, typename TSUB, typename TRES>
-  __device__ static inline TRES operator-(const TMIN minuend, const TSUB subtrahend) {
+__device__ static inline void scalar_subtract(const TMIN minuend, const TSUB subtrahend, TRES &result) {
   TRES casted_minuend;
   TRES casted_subtrahend;
   
   scalar_typecast(minuend,    casted_minuend);
-  scalar_typecast(subtrahend, casted_subtrahend);  
-
-  TRES result = casted_minuend-casted_subtrahend;
-  return result;
+  scalar_typecast(subtrahend, casted_subtrahend);
+  
+  result = casted_minuend - casted_subtrahend;
 }
 
 template <typename TREAL, typename TIMAG, typename TCMPX>
@@ -586,7 +585,9 @@ template <typename T1, typename T2>
   int idx = blockDim.x*blockIdx.x + threadIdx.x;
 
   if(idx < ndata){
-    d_diff[idx] = d_data1[idx] - d_data2[idx];
+    //d_diff[idx] = d_data1[idx] - d_data2[idx];
+
+    scalar_subtract(d_data1[idx], d_data2[idx], d_diff[idx]);
   }
 }
 
@@ -1221,6 +1222,40 @@ class HostDataExtractor {
 };
 
 
+/*! \brief A class to allocate memory as managed
+ *
+ * \tparam T data type of the host memory, which can be a complex data type
+ * 
+ */
+template <typename T>
+class ManagedMemoryAllocator {
+ public:
+  T *data = NULL; ///< Managed memory
+  
+  /*! Constructor of class ManagedMemoryAllocator
+   *
+   * \param[in] ndata  Number of data on host as type \p T
+   *
+   */
+ ManagedMemoryAllocator(int ndata)
+   :ndata(ndata){
+    checkCudaErrors(cudaMallocManaged(&data, ndata*sizeof(T), cudaMemAttachGlobal));
+  }
+  
+  //! Deconstructor of ManagedMemoryAllocator class.
+  /*!
+   * 
+   * - free host memory at the class life end
+   */
+  ~ManagedMemoryAllocator(){
+    checkCudaErrors(cudaFree(data));
+  }
+  
+ private:
+  int ndata; ///< Number of data points
+};
+
+
 /*! \brief A class to allocate memory on host 
  *
  * \tparam T data type of the host memory, which can be a complex data type
@@ -1314,7 +1349,7 @@ __global__ void cudautil_histogram(const T *in, int ndata, float min, float max,
   the kernel size here should be the same as previous gridDim.x size or larger
   
   \see cudautil_histogram
- */
+*/
 
 __global__ void cudautil_histogram_final(const unsigned int *in, int n, unsigned int *out);
 
