@@ -132,12 +132,10 @@ class RealDataGeneratorUniform{
    */
  RealDataGeneratorUniform(curandGenerator_t gen, int ndata, float exclude, float include, int nthread)
    :gen(gen), ndata(ndata), exclude(exclude), include(include), nthread(nthread){
-
-    int nbytes = ndata*sizeof(float);
     
     range = include-exclude;
 
-    checkCudaErrors(cudaMallocManaged (&data, nbytes, cudaMemAttachGlobal));
+    checkCudaErrors(cudaMallocManaged (&data, ndata*sizeof(float), cudaMemAttachGlobal));
     checkCudaErrors(curandGenerateUniform(gen, data, ndata));
         
     nblock = ndata/nthread;
@@ -157,13 +155,11 @@ class RealDataGeneratorUniform{
     
  private:
   int ndata;   ///< Number of generated data
-  int nbytes; ///< Size of data in bytes
-		     float include;  ///< inclusive limit of random numbers
+  float include;  ///< inclusive limit of random numbers
   float exclude;  ///< inclusive limit of random numbers
   float range;    ///< Range
   int nthread;    ///< Number of threads
   int nblock;     ///< Number of cuda blocks
-  int host;       ///< if we need a copy on host
   
   curandGenerator_t gen; ///< Generator to generate uniform distributed random numbers
 };
@@ -177,8 +173,8 @@ class RealDataGeneratorUniform{
 
 class RealDataGeneratorNormal{
  public:
-  float *d_data = NULL; ///< Normal distributed random number in float on device
-  float *h_data = NULL; ///< Normal distributed random number in float on host (when required)
+  float *data = NULL; ///< Unified memory to hold normal distributed random numbers
+  
   //! Constructor of RealDataGeneratorNormal class.
   /*!
    * 
@@ -191,19 +187,11 @@ class RealDataGeneratorNormal{
    * \param[in] mean   Required mean for normal distributed random numbers
    * \param[in] stddev Required standard deviation for normal distributed random numbers
    * \param[in] ndata  Number of float random numbers to generate
-   * \param[in] host   Marker to tell if we need a copy on host, default to 0
    */
- RealDataGeneratorNormal(curandGenerator_t gen, float mean, float stddev, int ndata, int host = 0)
-   :gen(gen), mean(mean), stddev(stddev), ndata(ndata), host(host){
-    nbytes = ndata*sizeof(float);
-    
-    checkCudaErrors(cudaMalloc(&d_data, nbytes));    
-    checkCudaErrors(curandGenerateNormal(gen, d_data, ndata, mean, stddev));
-
-    if(host){
-      checkCudaErrors(cudaMallocHost(&h_data, nbytes));
-      checkCudaErrors(cudaMemcpy(h_data, d_data, nbytes, cudaMemcpyDeviceToHost));
-    }
+  RealDataGeneratorNormal(curandGenerator_t gen, float mean, float stddev, int ndata)
+   :gen(gen), mean(mean), stddev(stddev), ndata(ndata){
+    checkCudaErrors(cudaMallocManaged (&data, ndata*sizeof(float), cudaMemAttachGlobal));
+    checkCudaErrors(curandGenerateNormal(gen, data, ndata, mean, stddev));
   }
   
   //! Deconstructor of RealDataGeneratorNormal class.
@@ -212,18 +200,13 @@ class RealDataGeneratorNormal{
    * - free device memory at the class life end
    */
   ~RealDataGeneratorNormal(){
-    checkCudaErrors(cudaFree(d_data));
-    if(host){
-      checkCudaErrors(cudaFreeHost(h_data));
-    }
+    checkCudaErrors(cudaFree(data));
   }
     
  private:
   float mean;  ///< Mean of generated data
   float stddev;///< Standard deviation of generated data
   int ndata;   ///< Number of generated data
-  int nbytes; ///< Number of bytes
-  int host;   ///< if we need a copy on host
   
   curandGenerator_t gen; ///< Generator to generate normal distributed random numbers
 };
