@@ -314,6 +314,7 @@ template <typename TIN, typename TOUT>
 class RealDataConvertor{
 public:
   TOUT *d_converted_data = NULL; ///< Converted data on device as \p TOUT data type
+  TOUT *h_converted_data = NULL; ///< Converted data on host as \p TOUT data type
   
   //! Constructor of RealDataConvertor class.
   /*!
@@ -329,18 +330,26 @@ public:
    * \param[in] d_data  Data to be converted with data type \p TIN on device
    * \param[in] ndata   Number of data points ton be converted
    * \param[in] nthread Number of threads per CUDA block to run `cudautil_convert` kernel
+   * \param[in] host    Marker to see if we need data on host, default to 0
    *
    */
-  RealDataConvertor(TIN *d_data, int ndata, int nthread)
-    :d_data(d_data), ndata(ndata), nthread(nthread){
+ RealDataConvertor(TIN *d_data, int ndata, int nthread, int host = 0)
+    :d_data(d_data), ndata(ndata), nthread(nthread), host(host){
+
+    nbytes = ndata*sizeof(TOUT);
     
-    checkCudaErrors(cudaMalloc(&d_converted_data, ndata*sizeof(TOUT)));
+    checkCudaErrors(cudaMalloc(&d_converted_data, nbytes));
     
     nblock = ndata/nthread;
     nblock = (nblock>1)?nblock:1;
 
     cudautil_convert<<<nblock, nthread>>>(d_data, d_converted_data, ndata);
     getLastCudaError("Kernel execution failed [ cudautil_convert ]");
+
+    if(host){
+      checkCudaErrors(cudaMallocHost(&h_converted_data, nbytes));
+      checkCudaErrors(cudaMemcpy(h_converted_data, d_converted_data, nbytes, cudaMemcpyDeviceToHost));
+    }
   }
 
   
@@ -349,9 +358,11 @@ public:
    * 
    * - free device memory at the class life end
    */
-  ~RealDataConvertor(){
-  
+  ~RealDataConvertor(){  
     checkCudaErrors(cudaFree(d_converted_data));
+    if(host){
+      checkCudaErrors(cudaFreeHost(h_converted_data));
+    }
   }
   
 private:
@@ -359,6 +370,8 @@ private:
   int ndata;   ///< Number of generated data
   int nthread; ///< Number of threads per CUDA block
   int nblock;  ///< Number of blocks to process \p ndata
+  int nbytes;  ///< number of bytes for output data
+  int host;    ///< marker to see if we need data on host
 };
 
 
