@@ -50,6 +50,13 @@ TEST_CASE("RealDataGeneratorUniform", "RealDataGeneratorUniform") {
   int exclude = 0;
   int include = 100;
 
+  cudaEvent_t g_start;
+  cudaEvent_t g_stop;
+  float gtime = 0;
+  checkCudaErrors(cudaEventCreate(&g_start));
+  checkCudaErrors(cudaEventCreate(&g_stop));
+  CUDA_STARTTIME(g);
+  
   // Get data
   curandGenerator_t gen;
   checkCudaErrors(curandCreateGenerator(&gen, CURAND_RNG_PSEUDO_DEFAULT));
@@ -69,6 +76,9 @@ TEST_CASE("RealDataGeneratorUniform", "RealDataGeneratorUniform") {
   int nblock = 256;
   RealDataHistogram<float> histogram(uniform_data.data, ndata, min, max, nblock, nthread);
 
+  CUDA_STOPTIME(g);
+  cout << "elapsed time is " << gtime << " milliseconds" << endl;
+  
   // plot histogram
   float x[NUM_BINS];
   float y[NUM_BINS];
@@ -109,6 +119,13 @@ TEST_CASE("RealDataGeneratorNormal", "RealDataGeneratorNormal") {
   float stddev = 10;
   int nthread = 128;
 
+  cudaEvent_t g_start;
+  cudaEvent_t g_stop;
+  float gtime = 0;
+  checkCudaErrors(cudaEventCreate(&g_start));
+  checkCudaErrors(cudaEventCreate(&g_stop));
+  CUDA_STARTTIME(g);
+  
   // Get data
   curandGenerator_t gen;
   checkCudaErrors(curandCreateGenerator(&gen, CURAND_RNG_PSEUDO_DEFAULT));
@@ -127,7 +144,10 @@ TEST_CASE("RealDataGeneratorNormal", "RealDataGeneratorNormal") {
   float max = 50;
   int nblock = 256;
   RealDataHistogram<float> histogram(normal_data.data, ndata, min, max, nblock, nthread);
- 
+
+  CUDA_STOPTIME(g);
+  cout << "elapsed time is " << gtime << " milliseconds" << endl;
+  
   // plot histogram
   float x[NUM_BINS];
   float y[NUM_BINS];

@@ -39,6 +39,15 @@ __device__ __host__ static inline void operator/=(cuComplex &a, float b)     { a
 __device__ __host__ static inline void operator+=(cuComplex &a, cuComplex b) { a.x+=b.x; a.y+=b.y;}
 __device__ __host__ static inline void operator-=(cuComplex &a, cuComplex b) { a.x-=b.x; a.y-=b.y;}
 
+#define CUDA_STARTTIME(x)  cudaEventRecord(x ## _start, 0);
+
+#define CUDA_STOPTIME(x) {					\
+    float dtime;						\
+    cudaEventRecord(x ## _stop, 0);				\
+    cudaEventSynchronize(x ## _stop);				\
+    cudaEventElapsedTime(&dtime, x ## _start, x ## _stop);	\
+    x ## time += dtime; }
+
 #include "reduction.cuh"
 #define CUDAUTIL_FLOAT2HALF __float2half
 #define CUDAUTIL_FLOAT2INT  __float2int_rz
