@@ -16,5 +16,5 @@ set_target_properties(test_operators PROPERTIES LINKER_LANGUAGE CUDA)
 
 add_executable(test_generators test_generators.cu)
 target_include_directories(test_generators PRIVATE ${UTIL_INC} ${CUDA_SAMPLES_COMMON_INC})
-target_link_libraries(test_generators PRIVATE Catch2WithMain util curand)
+target_link_libraries(test_generators PRIVATE Catch2WithMain util curand cpgplot)
 set_target_properties(test_generators PROPERTIES LINKER_LANGUAGE CUDA)
