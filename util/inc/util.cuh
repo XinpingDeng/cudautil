@@ -86,7 +86,7 @@ __device__ static inline void scalar_typecast(const unsigned a, float &b) { b = 
 //__device__ static inline void scalar_typecast(const float a, unsigned &b) { b = CUDAUTIL_FLOAT2UINT(a);}
 
 template <typename TMIN, typename TSUB, typename TRES>
-__device__ static inline TRES operator-(const TMIN minuend, const TSUB subtrahend) {
+  __device__ static inline TRES operator-(const TMIN minuend, const TSUB subtrahend) {
   TRES casted_minuend;
   TRES casted_subtrahend;
   
@@ -98,7 +98,7 @@ __device__ static inline TRES operator-(const TMIN minuend, const TSUB subtrahen
 }
 
 template <typename TREAL, typename TIMAG, typename TCMPX>
-__device__ static inline void make_cuComplex(const TREAL x, const TIMAG y, TCMPX &z){
+  __device__ static inline void make_cuComplex(const TREAL x, const TIMAG y, TCMPX &z){
   scalar_typecast(x, z.x);
   scalar_typecast(y, z.y);
 }
@@ -111,9 +111,8 @@ __device__ static inline void make_cuComplex(const TREAL x, const TIMAG y, TCMPX
  */
 
 class RealDataGeneratorUniform{
-public:
-  float *d_data = NULL; ///< Uniform distributed random number in float on device
-  float *h_data = NULL; ///< Uniform distributed random number in float on host (if we need it on host)
+ public:
+  float *data = NULL; ///< Unified Memory to hold generated uniform distributed random numbers in float
   
   //! Constructor of RealDataGeneratorUniform class.
   /*!
@@ -130,28 +129,21 @@ public:
    * \param[in] exclude The exclusive limit of uniform random numbers
    * \param[in] include The inclusive limit if uniform random numbers
    * \param[in] ndata   Number of float random numbers to generate
-   * \param[in] host    Marker to tell if we need a copy on host, default to 0
    */
- RealDataGeneratorUniform(curandGenerator_t gen, int ndata, float exclude, float include, int nthread, int host = 0)
-   :gen(gen), ndata(ndata), exclude(exclude), include(include), nthread(nthread), host(host){
+ RealDataGeneratorUniform(curandGenerator_t gen, int ndata, float exclude, float include, int nthread)
+   :gen(gen), ndata(ndata), exclude(exclude), include(include), nthread(nthread){
 
     int nbytes = ndata*sizeof(float);
     
     range = include-exclude;
-    
-    checkCudaErrors(cudaMalloc(&d_data, nbytes));
-    
-    checkCudaErrors(curandGenerateUniform(gen, d_data, ndata));
+
+    checkCudaErrors(cudaMallocManaged (&data, nbytes, cudaMemAttachGlobal));
+    checkCudaErrors(curandGenerateUniform(gen, data, ndata));
         
     nblock = ndata/nthread;
     nblock = (nblock>1)?nblock:1;
 
-    cudautil_contraintor<<<nblock, nthread>>>(d_data, exclude, range, ndata);
-
-    if(host){
-      checkCudaErrors(cudaMallocHost(&h_data, nbytes));
-      checkCudaErrors(cudaMemcpy(h_data, d_data, nbytes, cudaMemcpyDeviceToHost));
-    }
+    cudautil_contraintor<<<nblock, nthread>>>(data, exclude, range, ndata);
   }
   
   //! Deconstructor of RealDataGeneratorUniform class.
@@ -160,16 +152,13 @@ public:
    * - free device memory at the class life end
    */
   ~RealDataGeneratorUniform(){
-    checkCudaErrors(cudaFree(d_data));
-    if(host){
-      checkCudaErrors(cudaFreeHost(h_data));
-    }
+    checkCudaErrors(cudaFree(data));
   }
     
-private:
+ private:
   int ndata;   ///< Number of generated data
   int nbytes; ///< Size of data in bytes
-  float include;  ///< inclusive limit of random numbers
+		     float include;  ///< inclusive limit of random numbers
   float exclude;  ///< inclusive limit of random numbers
   float range;    ///< Range
   int nthread;    ///< Number of threads
@@ -187,7 +176,7 @@ private:
  */
 
 class RealDataGeneratorNormal{
-public:
+ public:
   float *d_data = NULL; ///< Normal distributed random number in float on device
   float *h_data = NULL; ///< Normal distributed random number in float on host (when required)
   //! Constructor of RealDataGeneratorNormal class.
@@ -229,7 +218,7 @@ public:
     }
   }
     
-private:
+ private:
   float mean;  ///< Mean of generated data
   float stddev;///< Standard deviation of generated data
   int ndata;   ///< Number of generated data
@@ -271,7 +260,7 @@ private:
  *
  */
 template <typename TIN, typename TOUT>
-__global__ void cudautil_convert(const TIN *input, TOUT *output, int ndata){
+  __global__ void cudautil_convert(const TIN *input, TOUT *output, int ndata){
   // Maximum x-dimension of a grid of thread blocks is 2^31-1
   // Maximum x- or y-dimension of a block is 1024
   // So here we can cover (2^31-1)*1024 random numbers, which are 2^41-1024
@@ -311,8 +300,8 @@ __global__ void cudautil_convert(const TIN *input, TOUT *output, int ndata){
  *
  */
 template <typename TIN, typename TOUT>
-class RealDataConvertor{
-public:
+  class RealDataConvertor{
+ public:
   TOUT *d_converted_data = NULL; ///< Converted data on device as \p TOUT data type
   TOUT *h_converted_data = NULL; ///< Converted data on host as \p TOUT data type
   
@@ -334,7 +323,7 @@ public:
    *
    */
  RealDataConvertor(TIN *d_data, int ndata, int nthread, int host = 0)
-    :d_data(d_data), ndata(ndata), nthread(nthread), host(host){
+   :d_data(d_data), ndata(ndata), nthread(nthread), host(host){
 
     nbytes = ndata*sizeof(TOUT);
     
@@ -365,14 +354,14 @@ public:
     }
   }
   
-private:
+ private:
   TIN *d_data = NULL; ///< An internal pointer to input data
   int ndata;   ///< Number of generated data
   int nthread; ///< Number of threads per CUDA block
   int nblock;  ///< Number of blocks to process \p ndata
   int nbytes;  ///< number of bytes for output data
   int host;    ///< marker to see if we need data on host
-};
+					  };
 
 
 /*! \brief A function to convert input data from \p T to float and calculate its power in parallel on GPU
@@ -384,21 +373,21 @@ private:
  * \see scalar_typecast
  *
  * The supported data convertation is shown in the following table (we can add more support here later)
- *
- * |T      |
- * |-------|
- * |double |
- * |half   |
- * |int    |
- * |int16_t|
- * |int8_t |
- *
- * \param[in]  d_data   Input data
- * \param[in]  ndata    Number of data
- * \param[out] d_float  Converted data in float
- * \param[out] d_float2 Power of converted data 
- *
- */
+  *
+  * |T      |
+  * |-------|
+  * |double |
+  * |half   |
+  * |int    |
+  * |int16_t|
+  * |int8_t |
+  *
+  * \param[in]  d_data   Input data
+  * \param[in]  ndata    Number of data
+  * \param[out] d_float  Converted data in float
+  * \param[out] d_float2 Power of converted data 
+  *
+  */
 template <typename T>
 __global__ void cudautil_pow(const T *d_data, float *d_float, float *d_float2, int ndata){
   int idx = blockDim.x*blockIdx.x + threadIdx.x;
@@ -415,7 +404,7 @@ __global__ void cudautil_pow(const T *d_data, float *d_float, float *d_float2, i
 template <typename T>
 class RealDataMeanStddevCalcultor {
   
-public:
+ public:
   float mean;   ///< Mean of the difference between input two vectors, always in float
   float stddev; ///< Standard deviation of the difference between input two vectors, always in float
 
@@ -446,8 +435,8 @@ public:
    * \see cudautil_pow, reduce, scalar_typecast
    *
    */
-  RealDataMeanStddevCalcultor(T *d_data, int ndata, int nthread, int method)
-    :d_data(d_data), ndata(ndata), nthread(nthread), method(method){
+ RealDataMeanStddevCalcultor(T *d_data, int ndata, int nthread, int method)
+   :d_data(d_data), ndata(ndata), nthread(nthread), method(method){
     
     nblock = ndata/nthread;
     nblock = (nblock>1)?nblock:1;
@@ -500,7 +489,7 @@ public:
     checkCudaErrors(cudaFreeHost(h_sum2));
   }
   
-private:
+ private:
 
   int ndata; ///< Number of input data
   int nthread; ///< Number of threads per CUDA block
@@ -542,7 +531,7 @@ private:
  * 
  */
 template <typename T1, typename T2>
-__global__ void cudautil_subtract(const T1 *d_data1, const T2 *d_data2, float *d_diff, int ndata){
+  __global__ void cudautil_subtract(const T1 *d_data1, const T2 *d_data2, float *d_diff, int ndata){
   int idx = blockDim.x*blockIdx.x + threadIdx.x;
 
   if(idx < ndata){
@@ -569,9 +558,9 @@ __global__ void cudautil_subtract(const T1 *d_data1, const T2 *d_data2, float *d
  * 
  */
 template <typename T1, typename T2>
-class RealDataDifferentiator {
+  class RealDataDifferentiator {
 
-public:
+ public:
   float *d_diff  = NULL;  ///< the difference between input \p d_data1 and \p d_data2
   
   //! Constructor of RealDataDifferentiator class.
@@ -589,8 +578,8 @@ public:
    * \param[in] nthread Number of threads per CUDA block to run `cudautil_convert`
    *
    */
-  RealDataDifferentiator(T1 *d_data1, T2 *d_data2, int ndata, int nthread)
-    :d_data1(d_data1), d_data2(d_data2), ndata(ndata), nthread(nthread){
+ RealDataDifferentiator(T1 *d_data1, T2 *d_data2, int ndata, int nthread)
+   :d_data1(d_data1), d_data2(d_data2), ndata(ndata), nthread(nthread){
     
     // Now get memory for \p diff 
     nblock = ndata/nthread;
@@ -612,7 +601,7 @@ public:
     checkCudaErrors(cudaFree(d_diff));
   }
   
-private:
+ private:
 
   int ndata; ///< Number of input data
   int nthread; ///< Number of threads per CUDA block
@@ -638,7 +627,7 @@ private:
  *
  */
 template <typename TREAL, typename TIMAG, typename TCMPX>
-__global__ void cudautil_complexbuilder(const TREAL *d_real, const TIMAG *d_imag, TCMPX *d_cmpx, int ndata){
+  __global__ void cudautil_complexbuilder(const TREAL *d_real, const TIMAG *d_imag, TCMPX *d_cmpx, int ndata){
   // Maximum x-dimension of a grid of thread blocks is 2^31-1
   // Maximum x- or y-dimension of a block is 1024
   // So here we can cover (2^31-1)*1024 random numbers, which are 2^41-1024
@@ -677,8 +666,8 @@ __global__ void cudautil_complexbuilder(const TREAL *d_real, const TIMAG *d_imag
  *
  */
 template <typename TREAL, typename TIMAG, typename TCMPX>
-class ComplexDataBuilder {
-public:
+  class ComplexDataBuilder {
+ public:
   TCMPX *d_cmpx = NULL; ///< Complex data on device
   
   //! Constructor of ComplexDataBuilder class.
@@ -700,8 +689,8 @@ public:
    * \param[in] nthread Number of threads per CUDA block to run `cudautil_complexbuilder` kernel
    *
    */
-  ComplexDataBuilder(TREAL *d_real, TIMAG *d_imag, int ndata, int nthread )
-    :d_real(d_real), d_imag(d_imag), ndata(ndata), nthread(nthread){
+ ComplexDataBuilder(TREAL *d_real, TIMAG *d_imag, int ndata, int nthread )
+   :d_real(d_real), d_imag(d_imag), ndata(ndata), nthread(nthread){
     checkCudaErrors(cudaMalloc(&d_cmpx, ndata*sizeof(TCMPX)));
 
     nblock = ndata/nthread;
@@ -720,7 +709,7 @@ public:
     checkCudaErrors(cudaFree(d_cmpx));
   }
   
-private:
+ private:
   TREAL *d_real = NULL;
   TIMAG *d_imag = NULL;
   
@@ -745,7 +734,7 @@ private:
  *
  */
 template <typename TCMPX, typename TREAL, typename TIMAG>
-__global__ void cudautil_complexsplitter(const TCMPX *d_cmpx, const TREAL *d_real, TIMAG *d_imag, int ndata){
+  __global__ void cudautil_complexsplitter(const TCMPX *d_cmpx, const TREAL *d_real, TIMAG *d_imag, int ndata){
   // Maximum x-dimension of a grid of thread blocks is 2^31-1
   // Maximum x- or y-dimension of a block is 1024
   // So here we can cover (2^31-1)*1024 random numbers, which are 2^41-1024
@@ -784,8 +773,8 @@ __global__ void cudautil_complexsplitter(const TCMPX *d_cmpx, const TREAL *d_rea
  *
  */
 template <typename TCMPX, typename TREAL, typename TIMAG>
-class ComplexDataSplitter {
-public:
+  class ComplexDataSplitter {
+ public:
   TREAL *d_real = NULL; ///< Real part on device
   TIMAG *d_imag = NULL; ///< Imag part on device
   
@@ -808,8 +797,8 @@ public:
    *
    */
   
-  ComplexDataSplitter(TCMPX *d_cmpx, int ndata, int nthread)
-    :d_cmpx(d_cmpx), ndata(ndata), nthread(nthread){
+ ComplexDataSplitter(TCMPX *d_cmpx, int ndata, int nthread)
+   :d_cmpx(d_cmpx), ndata(ndata), nthread(nthread){
     checkCudaErrors(cudaMalloc(&d_real, ndata*sizeof(TREAL)));
     checkCudaErrors(cudaMalloc(&d_imag, ndata*sizeof(TIMAG)));
 
@@ -830,7 +819,7 @@ public:
     checkCudaErrors(cudaFree(d_imag));
   }
   
-private:
+ private:
   TCMPX *d_cmpx = NULL;
   
   int ndata;
@@ -870,7 +859,7 @@ __global__ void cudautil_amplitude_phase(const T *v, float *amplitude, float *ph
 
 template <typename T>
 class AmplitudePhaseCalculator{
-public:
+ public:
   float *d_amp = NULL;///< Calculated amplitude on device
   float *d_pha = NULL;///< Calculated phase on device
   
@@ -890,11 +879,11 @@ public:
    * \param[in] nthread Number of threads per CUDA block to run `cudautil_amplitude_phase` kernel
    *
    */
-  AmplitudePhaseCalculator(T *d_data,
-			   int ndata,
-			   int nthread
-			   )
-    :d_data(d_data), ndata(ndata), nthread(nthread){
+ AmplitudePhaseCalculator(T *d_data,
+			  int ndata,
+			  int nthread
+			  )
+   :d_data(d_data), ndata(ndata), nthread(nthread){
     // Get other buffers
     checkCudaErrors(cudaMalloc(&d_amp, ndata * sizeof(float)));
     checkCudaErrors(cudaMalloc(&d_pha, ndata * sizeof(float)));
@@ -916,7 +905,7 @@ public:
     checkCudaErrors(cudaFree(d_pha));
   }
 
-private:
+ private:
   int ndata; ///< number of values as a private parameter
   int nblock; ///< Number of CUDA blocks
   int nthread; ///< number of threas per block
@@ -932,7 +921,7 @@ private:
  */
 template <typename T>
 class DeviceMemoryAllocator {
-public:
+ public:
   T *d_data = NULL; ///< Device memory
   T *h_data = NULL; ///< Host memory
   
@@ -962,7 +951,7 @@ public:
     }
   }
 
-private:
+ private:
   int ndata; ///< Number of data points
   int host;  ///< Do we also need to copy on host?
 };
@@ -975,7 +964,7 @@ private:
  */
 template <typename T>
 class DeviceDataExtractor {
-public:
+ public:
   T *h_data = NULL; ///< Host buffer to hold data
   
   /*!
@@ -983,8 +972,8 @@ public:
    * \param[in] ndata Number of data on host as type \p T
    * async memcpy will not work here as we always get new copy of memory
    */
-  DeviceDataExtractor(T *d_data, int ndata)
-    :d_data(d_data), ndata(ndata){
+ DeviceDataExtractor(T *d_data, int ndata)
+   :d_data(d_data), ndata(ndata){
    
     size = ndata*sizeof(T);
     checkCudaErrors(cudaMallocHost(&h_data, size));
@@ -1000,7 +989,7 @@ public:
     checkCudaErrors(cudaFreeHost(h_data));
   }
   
-private:
+ private:
   T *d_data = NULL;
   int ndata;
   int size;
@@ -1014,7 +1003,7 @@ private:
  */
 template <typename T>
 class HostDataExtractor {
-public:
+ public:
   T *d_data = NULL; ///< Device buffer to hold data
 
   /*! Constructor of class HostDataExtractor
@@ -1023,8 +1012,8 @@ public:
    * \param[in] ndata Number of data on host as type \p T
    * async memcpy will not work here as we always get new copy of memory
    */
-  HostDataExtractor(T *h_data, int ndata)
-    :h_data(h_data), ndata(ndata){
+ HostDataExtractor(T *h_data, int ndata)
+   :h_data(h_data), ndata(ndata){
     
     size = ndata*sizeof(T);
     checkCudaErrors(cudaMalloc(&d_data, size));
@@ -1040,7 +1029,7 @@ public:
     checkCudaErrors(cudaFree(d_data));
   }
   
-private:
+ private:
   T *h_data = NULL;
   int ndata;
   int size;
@@ -1054,7 +1043,7 @@ private:
  */
 template <typename T>
 class HostMemoryAllocator {
-public:
+ public:
   T *h_data = NULL; ///< Host memory
   T *d_data = NULL; ///< Device memory
   
@@ -1084,7 +1073,7 @@ public:
     }
   }
 
-private:
+ private:
   int ndata; ///< Number of data points
   int device; ///< Do we need a copy on device?
 };

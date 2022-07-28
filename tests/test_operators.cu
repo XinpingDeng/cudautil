@@ -10,7 +10,7 @@
 
 using namespace std;
 
-TEST_CASE("cuComplex_times_float", "cuComplex_times_float") {
+TEST_CASE("cuComplexTimesFloat", "cuComplexTimesFloat") {
   
   cuComplex a = {10.0, 5.0};
   float b = 3.0;
@@ -25,7 +25,7 @@ TEST_CASE("cuComplex_times_float", "cuComplex_times_float") {
   REQUIRE(a.y*b == c.y);
 }    
 
-TEST_CASE("float_times_cuComplex", "float_times_cuComplex") {
+TEST_CASE("floatTimescuComplex", "floatTimescuComplex") {
   
   cuComplex a = {10.0, 5.0};
   float b = 3.0;
@@ -40,7 +40,7 @@ TEST_CASE("float_times_cuComplex", "float_times_cuComplex") {
   REQUIRE(b*a.y == c.y);
 }    
 
-TEST_CASE("cuComplex_divides_float", "cuComplex_divides_float") {
+TEST_CASE("cuComplexDividesFloat", "cuComplexDividesFloat") {
   
   cuComplex a = {10.0, 5.0};
   float b = 3.0;
@@ -55,7 +55,7 @@ TEST_CASE("cuComplex_divides_float", "cuComplex_divides_float") {
   REQUIRE(a.y/b == c.y);
 }    
 
-TEST_CASE("cuComplex_divides_equal_float", "cuComplex_divides_equal_float") {
+TEST_CASE("cuComplexDividesEqualFloat", "cuComplexDividesEqualFloat") {
   
   cuComplex a = {10.0, 5.0};
   float b = 3.0;
@@ -72,7 +72,7 @@ TEST_CASE("cuComplex_divides_equal_float", "cuComplex_divides_equal_float") {
   REQUIRE(a.y == c.y/b);
 }
 
-TEST_CASE("cuComplex_plus_equal_cuComplex", "cuComplex_plus_equal_cuComplex") {
+TEST_CASE("cuComplexPlusEqualcuComplex", "cuComplexPlusEqualcuComplex") {
   
   cuComplex a = {10.0, 5.0};
   cuComplex b = {3.0, 1.0};
@@ -89,7 +89,7 @@ TEST_CASE("cuComplex_plus_equal_cuComplex", "cuComplex_plus_equal_cuComplex") {
   REQUIRE(a.y == c.y+b.y);
 }    
 
-TEST_CASE("cuComplex_minus_equal_cuComplex", "cuComplex_minus_equal_cuComplex") {
+TEST_CASE("cuComplexMinusEqualcuComplex", "cuComplexMinusEqualcuComplex") {
   
   cuComplex a = {10.0, 5.0};
   cuComplex b = {3.0, 1.0};
