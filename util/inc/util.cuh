@@ -146,6 +146,8 @@ class RealDataGeneratorUniform{
     nblock = ndata/nthread;
     nblock = (nblock>1)?nblock:1;
     cudautil_contraintor<<<nblock, nthread>>>(data, exclude, range, ndata);
+
+    checkCudaErrors(cudaDeviceSynchronize());
   }
   
   //! Deconstructor of RealDataGeneratorUniform class.
@@ -155,6 +157,7 @@ class RealDataGeneratorUniform{
    */
   ~RealDataGeneratorUniform(){
     checkCudaErrors(cudaFree(data));
+    checkCudaErrors(cudaDeviceSynchronize());
   }
     
  private:
@@ -346,6 +349,8 @@ template <typename TIN, typename TOUT>
     if(type == cudaMemoryTypeUnregistered || type == cudaMemoryTypeHost){
       checkCudaErrors(cudaFree(input));
     }
+    
+    checkCudaErrors(cudaDeviceSynchronize());
   }
   
   //! Deconstructor of RealDataConvertor class.
@@ -355,6 +360,7 @@ template <typename TIN, typename TOUT>
    */
   ~RealDataConvertor(){  
     checkCudaErrors(cudaFree(data));
+    checkCudaErrors(cudaDeviceSynchronize());
   }
   
  private:
@@ -509,6 +515,8 @@ class RealDataMeanStddevCalcultor {
     if(type == cudaMemoryTypeUnregistered || type == cudaMemoryTypeHost){
       checkCudaErrors(cudaFree(data));
     }
+    
+    checkCudaErrors(cudaDeviceSynchronize());
   }
   
   //! Deconstructor of RealDataMeanStddevCalcultor class.
@@ -517,6 +525,7 @@ class RealDataMeanStddevCalcultor {
    * - free device memory at the class life end
    */
   ~RealDataMeanStddevCalcultor(){
+    checkCudaErrors(cudaDeviceSynchronize());
   }
   
  private:
@@ -653,6 +662,8 @@ template <typename T1, typename T2>
     if(type2 == cudaMemoryTypeUnregistered || type2 == cudaMemoryTypeHost){
       checkCudaErrors(cudaFree(data2));
     }
+
+    checkCudaErrors(cudaDeviceSynchronize());
   }
   
   //! Deconstructor of RealDataDifferentiator class.
@@ -662,6 +673,7 @@ template <typename T1, typename T2>
    */
   ~RealDataDifferentiator(){
     checkCudaErrors(cudaFree(data));
+    checkCudaErrors(cudaDeviceSynchronize());
   }
   
  private:
@@ -800,7 +812,9 @@ template <typename TREAL, typename TIMAG, typename TCMPX>
     }
     if(type_real == cudaMemoryTypeUnregistered || type_real == cudaMemoryTypeHost){
       checkCudaErrors(cudaFree(data_real));
-    }    
+    }
+
+    checkCudaErrors(cudaDeviceSynchronize());
   }
   
   //! Deconstructor of ComplexDataBuilder class.
@@ -810,6 +824,7 @@ template <typename TREAL, typename TIMAG, typename TCMPX>
    */
   ~ComplexDataBuilder(){
     checkCudaErrors(cudaFree(data));
+    checkCudaErrors(cudaDeviceSynchronize());
   }
   
  private:
@@ -883,15 +898,15 @@ template <typename TCMPX, typename TREAL, typename TIMAG>
 template <typename TCMPX, typename TREAL, typename TIMAG>
   class ComplexDataSplitter {
  public:
-  TREAL *d_real = NULL; ///< Real part on device
-  TIMAG *d_imag = NULL; ///< Imag part on device
+  TREAL *real = NULL; ///< Real part on device
+  TIMAG *imag = NULL; ///< Imag part on device
   
   //! Constructor of ComplexDataSplitter class.
   /*!
    * 
    * - initialise the class
    * - create device memory for \p ndata real and imag numbers
-   * - split complex numbers to \p d_real and \p d_imag
+   * - split complex numbers to \p real and \p imag
    *
    * \see cudautil_complexbuilder, scalar_typecast
    *
@@ -899,22 +914,45 @@ template <typename TCMPX, typename TREAL, typename TIMAG>
    * \tparam TIMAG Imag part data type
    * \tparam TCMPX Complex data type
    * 
-   * \param[in] d_cmpx  Complex numbers
+   * \param[in] cmpx  Complex numbers
    * \param[in] ndata   Number of data points ton be converted
    * \param[in] nthread Number of threads per CUDA block to run `cudautil_complexbuilder` kernel
    *
    */
   
- ComplexDataSplitter(TCMPX *d_cmpx, int ndata, int nthread)
-   :d_cmpx(d_cmpx), ndata(ndata), nthread(nthread){
-    checkCudaErrors(cudaMalloc(&d_real, ndata*sizeof(TREAL)));
-    checkCudaErrors(cudaMalloc(&d_imag, ndata*sizeof(TIMAG)));
+ ComplexDataSplitter(TCMPX *cmpx, int ndata, int nthread)
+   :ndata(ndata), nthread(nthread){
 
+    // Sort out input buffer
+    checkCudaErrors(cudaPointerGetAttributes(&attributes, cmpx));
+    type = attributes.type;
+
+    if(type == cudaMemoryTypeUnregistered || type == cudaMemoryTypeHost){
+      int nbytes = ndata*sizeof(TCMPX);
+      checkCudaErrors(cudaMalloc(&data, nbytes));
+      checkCudaErrors(cudaMemcpy(data, cmpx, nbytes, cudaMemcpyDefault));
+    }
+    else{
+      data = cmpx;
+    }
+    
+    // Create managed memory for output
+    checkCudaErrors(cudaMallocManaged(&real, ndata*sizeof(TREAL), cudaMemAttachGlobal));
+    checkCudaErrors(cudaMallocManaged(&imag, ndata*sizeof(TIMAG), cudaMemAttachGlobal));
+
+    // Setup kernel and run it 
     nblock = ndata/nthread;
     nblock = (nblock>1)?nblock:1;
     
-    cudautil_complexsplitter<<<nblock, nthread>>>(d_cmpx, d_real, d_imag, ndata);
+    cudautil_complexsplitter<<<nblock, nthread>>>(data, real, imag, ndata);
     getLastCudaError("Kernel execution failed [ cudautil_complexsplitter ]");
+
+    // Free intermediate memory
+    if(type == cudaMemoryTypeUnregistered || type == cudaMemoryTypeHost){
+      checkCudaErrors(cudaFree(data));
+    }
+    
+    checkCudaErrors(cudaDeviceSynchronize());
   }
   
   //! Deconstructor of ComplexDataSplitter class.
@@ -923,13 +961,18 @@ template <typename TCMPX, typename TREAL, typename TIMAG>
    * - free device memory at the class life end
    */
   ~ComplexDataSplitter(){
-    checkCudaErrors(cudaFree(d_real));
-    checkCudaErrors(cudaFree(d_imag));
+    checkCudaErrors(cudaFree(real));
+    checkCudaErrors(cudaFree(imag));
+
+    checkCudaErrors(cudaDeviceSynchronize());
   }
   
  private:
-  TCMPX *d_cmpx = NULL;
+  TCMPX *data = NULL;
   
+  cudaPointerAttributes attributes; ///< to hold memory attributes
+  enum cudaMemoryType type; ///< memory type
+    
   int ndata;
   int nthread;
   int nblock;
@@ -1000,6 +1043,8 @@ class AmplitudePhaseCalculator{
     nblock = ndata/nthread;
     nblock = (nblock>1)?nblock:1;
     cudautil_amplitude_phase<<<nblock, nthread>>>(d_data, d_amp, d_pha, ndata);
+
+    checkCudaErrors(cudaDeviceSynchronize());
   }
   
   //! Deconstructor of RealDataGeneratorNormal class.
@@ -1011,6 +1056,8 @@ class AmplitudePhaseCalculator{
     
     checkCudaErrors(cudaFree(d_amp));
     checkCudaErrors(cudaFree(d_pha));
+
+    checkCudaErrors(cudaDeviceSynchronize());
   }
 
  private:
