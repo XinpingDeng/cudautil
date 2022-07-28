@@ -895,15 +895,20 @@ template <typename T>
 class DeviceMemoryAllocator {
 public:
   T *d_data = NULL; ///< Device memory
+  T *h_data = NULL; ///< Host memory
   
   /*! Constructor of class DeviceMemoryAllocator
    *
    * \param[in] ndata Number of data on host as type \p T
+   * \param[in] host  Marker to see if we also need a copy on host
    *
    */
-  DeviceMemoryAllocator(int ndata)
-    :ndata(ndata){
+ DeviceMemoryAllocator(int ndata, int host=0)
+   :ndata(ndata), host(host){
     checkCudaErrors(cudaMalloc(&d_data, ndata*sizeof(T)));
+    if(host){
+      checkCudaErrors(cudaMallocHost(&h_data, ndata*sizeof(T)));
+    }
   }
   
   //! Deconstructor of DeviceMemoryAllocator class.
@@ -913,10 +918,14 @@ public:
    */
   ~DeviceMemoryAllocator(){
     checkCudaErrors(cudaFree(d_data));
+    if(host){
+      checkCudaErrors(cudaFreeHost(h_data));
+    }
   }
 
 private:
-  int ndata; /// < Number of data points   
+  int ndata; ///< Number of data points
+  int host;  ///< Do we also need to copy on host?
 };
 
 
@@ -1008,15 +1017,20 @@ template <typename T>
 class HostMemoryAllocator {
 public:
   T *h_data = NULL; ///< Host memory
+  T *d_data = NULL; ///< Device memory
   
   /*! Constructor of class HostMemoryAllocator
    *
-   * \param[in] ndata Number of data on host as type \p T
+   * \param[in] ndata  Number of data on host as type \p T
+   * \param[in] device Marker to tell if we also need a copy on device
    *
    */
-  HostMemoryAllocator(int ndata)
-    :ndata(ndata){
+ HostMemoryAllocator(int ndata, int device)
+   :ndata(ndata), device(device){
     checkCudaErrors(cudaMallocHost(&h_data, ndata*sizeof(T)));
+    if(device){
+      checkCudaErrors(cudaMalloc(&d_data, ndata*sizeof(T)));
+    }
   }
   
   //! Deconstructor of HostMemoryAllocator class.
@@ -1026,10 +1040,14 @@ public:
    */
   ~HostMemoryAllocator(){
     checkCudaErrors(cudaFreeHost(h_data));
+    if(device){
+      checkCudaErrors(cudaFree(d_data));
+    }
   }
 
 private:
-  int ndata; /// < Number of data points   
+  int ndata; ///< Number of data points
+  int device; ///< Do we need a copy on device?
 };
 
 
