@@ -8,8 +8,8 @@
 
 #include "cpgplot.h"
 
-#include <catch2/catch_test_macros.hpp>
-#include <catch2/catch_approx.hpp>
+#define DOCTEST_CONFIG_IMPLEMENT_WITH_MAIN
+#include "doctest.h"
 
 #include <numeric>
 #include <vector>
@@ -19,7 +19,7 @@
 #define STRLEN 256
 
 using namespace std;
-using namespace Catch;
+using namespace doctest;
 
 // Always work with float with test c code
 int calculate_mean_stddev(float *data, int ndata, float &mean, float &stddev){
@@ -33,7 +33,7 @@ int calculate_mean_stddev(float *data, int ndata, float &mean, float &stddev){
 
 // Here we only check float data type, do we need to check other types?
 // We probably should check data type cast directly for other types
-TEST_CASE("RealDataDifferentiator", "RealDataDifferentiator") {
+TEST_CASE("RealDataDifferentiator") {
   
   int ndata = 102400000;
   float mean = 10;
@@ -93,6 +93,6 @@ TEST_CASE("RealDataDifferentiator", "RealDataDifferentiator") {
        << " stddev is " << stddev_c
        << endl;
 
-  REQUIRE(mean_g   == Approx(mean_c).epsilon(epsilon));
-  REQUIRE(stddev_g == Approx(stddev_c).epsilon(epsilon));
+  CHECK(mean_g   == Approx(mean_c).epsilon(epsilon));
+  CHECK(stddev_g == Approx(stddev_c).epsilon(epsilon));
 }

@@ -4,4 +4,4 @@ project(util LANGUAGES CUDA CXX C)
 
 add_subdirectory(util)
 add_subdirectory(tests)
-add_subdirectory($ENV{CATCH2DIR} Catch2)
+#add_subdirectory($ENV{CATCH2DIR} Catch2)

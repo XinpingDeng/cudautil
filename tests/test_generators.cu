@@ -8,7 +8,8 @@
 
 #include "cpgplot.h"
 
-#include <catch2/catch_test_macros.hpp>
+#define DOCTEST_CONFIG_IMPLEMENT_WITH_MAIN
+#include "doctest.h"
 
 #define STRLEN 256
 
@@ -81,7 +82,7 @@ int plotit(unsigned *data, float min, float max, char *device, char *title){
   return EXIT_SUCCESS;
 }
 
-TEST_CASE("RealDataGeneratorUniform", "RealDataGeneratorUniform") {
+TEST_CASE("RealDataGeneratorUniform") {
 
   int nthread = 128;
   int ndata = 102400000;
@@ -125,7 +126,7 @@ TEST_CASE("RealDataGeneratorUniform", "RealDataGeneratorUniform") {
   plotit(histogram.data, min, max, device, title);
 }    
 
-TEST_CASE("RealDataGeneratorNormal", "RealDataGeneratorNormal") {
+TEST_CASE("RealDataGeneratorNormal") {
 
   int ndata = 102400000;
   float mean = 0;

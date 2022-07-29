@@ -6,11 +6,12 @@
 #include "util.hpp"
 #include "util.cuh"
 
-#include <catch2/catch_test_macros.hpp>
+#define DOCTEST_CONFIG_IMPLEMENT_WITH_MAIN
+#include "doctest.h"
 
 using namespace std;
 
-TEST_CASE("cuComplexTimesFloat", "cuComplexTimesFloat") {
+TEST_CASE("cuComplexTimesFloat") {
   
   cuComplex a = {10.0, 5.0};
   float b = 3.0;
@@ -21,11 +22,11 @@ TEST_CASE("cuComplexTimesFloat", "cuComplexTimesFloat") {
   cout << b << endl;
   cout << "a*b is " << c << endl;
   
-  REQUIRE(a.x*b == c.x);
-  REQUIRE(a.y*b == c.y);
+  CHECK(a.x*b == c.x);
+  CHECK(a.y*b == c.y);
 }    
 
-TEST_CASE("floatTimescuComplex", "floatTimescuComplex") {
+TEST_CASE("floatTimescuComplex") {
   
   cuComplex a = {10.0, 5.0};
   float b = 3.0;
@@ -36,11 +37,11 @@ TEST_CASE("floatTimescuComplex", "floatTimescuComplex") {
   cout << b << endl;
   cout << "b*a is " << c << endl;
   
-  REQUIRE(b*a.x == c.x);
-  REQUIRE(b*a.y == c.y);
+  CHECK(b*a.x == c.x);
+  CHECK(b*a.y == c.y);
 }    
 
-TEST_CASE("cuComplexDividesFloat", "cuComplexDividesFloat") {
+TEST_CASE("cuComplexDividesFloat") {
   
   cuComplex a = {10.0, 5.0};
   float b = 3.0;
@@ -51,11 +52,11 @@ TEST_CASE("cuComplexDividesFloat", "cuComplexDividesFloat") {
   cout << b << endl;
   cout << "a/b is " << c << endl;
   
-  REQUIRE(a.x/b == c.x);
-  REQUIRE(a.y/b == c.y);
+  CHECK(a.x/b == c.x);
+  CHECK(a.y/b == c.y);
 }    
 
-TEST_CASE("cuComplexDividesEqualFloat", "cuComplexDividesEqualFloat") {
+TEST_CASE("cuComplexDividesEqualFloat") {
   
   cuComplex a = {10.0, 5.0};
   float b = 3.0;
@@ -68,11 +69,11 @@ TEST_CASE("cuComplexDividesEqualFloat", "cuComplexDividesEqualFloat") {
   cout << b << endl;
   cout << "a/=b is " << a << endl;
   
-  REQUIRE(a.x == c.x/b);
-  REQUIRE(a.y == c.y/b);
+  CHECK(a.x == c.x/b);
+  CHECK(a.y == c.y/b);
 }
 
-TEST_CASE("cuComplexPlusEqualcuComplex", "cuComplexPlusEqualcuComplex") {
+TEST_CASE("cuComplexPlusEqualcuComplex") {
   
   cuComplex a = {10.0, 5.0};
   cuComplex b = {3.0, 1.0};
@@ -85,11 +86,11 @@ TEST_CASE("cuComplexPlusEqualcuComplex", "cuComplexPlusEqualcuComplex") {
   cout << b << endl;
   cout << "a+=b is " << a << endl;
   
-  REQUIRE(a.x == c.x+b.x);
-  REQUIRE(a.y == c.y+b.y);
+  CHECK(a.x == c.x+b.x);
+  CHECK(a.y == c.y+b.y);
 }    
 
-TEST_CASE("cuComplexMinusEqualcuComplex", "cuComplexMinusEqualcuComplex") {
+TEST_CASE("cuComplexMinusEqualcuComplex") {
   
   cuComplex a = {10.0, 5.0};
   cuComplex b = {3.0, 1.0};
@@ -102,7 +103,7 @@ TEST_CASE("cuComplexMinusEqualcuComplex", "cuComplexMinusEqualcuComplex") {
   cout << b << endl;
   cout << "a-=b is " << a << endl;
   
-  REQUIRE(a.x == c.x-b.x);
-  REQUIRE(a.y == c.y-b.y);
+  CHECK(a.x == c.x-b.x);
+  CHECK(a.y == c.y-b.y);
 }    
 

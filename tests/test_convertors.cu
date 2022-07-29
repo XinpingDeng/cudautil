@@ -8,7 +8,8 @@
 
 #include "cpgplot.h"
 
-#include <catch2/catch_test_macros.hpp>
+#define DOCTEST_CONFIG_IMPLEMENT_WITH_MAIN
+#include "doctest.h"
 
 #define STRLEN 256
 
@@ -16,7 +17,7 @@ using namespace std;
 
 // We can not compare converted numbers against CPU implementation
 // We can only check the difference between original data and converted data with mean and standard deviation
-TEST_CASE("RealDataConvertorFloat2Float", "RealDataConvertorFloat2Float") {
+TEST_CASE("RealDataConvertorFloat2Float") {
 
   int ndata = 102400000;
   float mean = 0;
@@ -60,7 +61,7 @@ TEST_CASE("RealDataConvertorFloat2Float", "RealDataConvertorFloat2Float") {
   REQUIRE(stddev_f == 0);
 }
 
-TEST_CASE("RealDataConvertorFloat2Half", "RealDataConvertorFloat2Half") {
+TEST_CASE("RealDataConvertorFloat2Half") {
 
   int ndata = 102400000;
   float mean = 0;
@@ -104,7 +105,7 @@ TEST_CASE("RealDataConvertorFloat2Half", "RealDataConvertorFloat2Half") {
   //REQUIRE(stddev_f == 0);
 }
 
-TEST_CASE("RealDataConvertorFloat2Int8_T", "RealDataConvertorFloat2Int8_T") {
+TEST_CASE("RealDataConvertorFloat2Int8_T") {
 
   int ndata = 102400000;
   float mean = 0;
