@@ -23,32 +23,10 @@ using namespace Catch;
 // Always work with float with test c code
 int calculate_mean_stddev(float *data, int ndata, float &mean, float &stddev){
 
-  vector<float> v(data, data + ndata);
-  
-  mean = accumulate(v.begin(), v.end(), 0.0)/v.size();
-  
-  vector<float> diff(v.size());
-  std::transform(v.begin(), v.end(), diff.begin(), [mean](float x) { return x - mean; });
-  stddev = sqrt(inner_product(diff.begin(), diff.end(), diff.begin(), 0.0)/v.size());
-  
-  //float mean2 =0;
-  //
-  //mean = 0;
-  //for(int i = 0; i < ndata; i++){
-  //  float d = data[i];
-  //  mean += d;
-  //  mean2 += d*d;
-  //}  
-  //
-  //cout << mean << " " << mean2 << endl;
-  //
-  //mean  /= (float)ndata;
-  //mean2 /= (float)ndata;
-  //
-  //stddev = sqrtf(mean2 - mean*mean);
-  //
-  //cout << stddev << " " << mean << " " << mean2 << endl;
-  
+  float mean2 = inner_product(data, data+ndata, data, 0.0)/(float)ndata;
+  mean = accumulate(data, data+ndata, 0.0)/(float)ndata;
+  stddev = sqrt(mean2 - mean*mean);
+    
   return EXIT_SUCCESS;
 }
 
