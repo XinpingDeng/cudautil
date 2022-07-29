@@ -29,7 +29,7 @@ int calculate_mean_stddev(float *data, int ndata, float &mean, float &stddev){
   
   vector<float> diff(v.size());
   std::transform(v.begin(), v.end(), diff.begin(), [mean](float x) { return x - mean; });
-  stddev = inner_product(diff.begin(), diff.end(), diff.begin(), 0.0)/v.size();
+  stddev = sqrt(inner_product(diff.begin(), diff.end(), diff.begin(), 0.0)/v.size());
   
   //float mean2 =0;
   //
