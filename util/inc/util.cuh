@@ -108,7 +108,9 @@ template <typename TREAL, typename TIMAG, typename TCMPX>
   otherwise it alloc new buffer on device and copy the data to it
 */
 template <typename T>
-int copy2device(T *raw, T *data, int ndata, enum cudaMemoryType &type){
+T* copy2device(T *raw, int ndata, enum cudaMemoryType &type){
+  T *data = NULL;
+  
   cudaPointerAttributes attributes; ///< to hold memory attributes
   
   // cudaMemoryTypeUnregistered for unregistered host memory,
@@ -120,14 +122,14 @@ int copy2device(T *raw, T *data, int ndata, enum cudaMemoryType &type){
   
   if(type == cudaMemoryTypeUnregistered || type == cudaMemoryTypeHost){
     int nbytes = ndata*sizeof(T);
-    checkCudaErrors(cudaMalloc(&data, nbytes));
+    checkCudaErrors(cudaMallocManaged(&data, nbytes, cudaMemAttachGlobal));
     checkCudaErrors(cudaMemcpy(data, raw, nbytes, cudaMemcpyDefault));
   }
   else{
     data = raw;
   }
   
-  return EXIT_SUCCESS;
+  return data;
 }
 
 /*! A function to free memory if it is a copy of a host memory
@@ -365,7 +367,7 @@ template <typename TIN, typename TOUT>
  RealDataConvertor(TIN *raw, int ndata, int nthread)
    :ndata(ndata), nthread(nthread){
 
-    copy2device(raw, input, ndata, type);
+    input = copy2device(raw, ndata, type);
     
     // Create output buffer as managed
     checkCudaErrors(cudaMallocManaged(&data, ndata*sizeof(TOUT), cudaMemAttachGlobal));
@@ -476,23 +478,7 @@ class RealDataMeanStddevCalculator {
    :ndata(ndata), nthread(nthread), method(method){
 
     /* Sort out input buffers */
-    // Check if the input data in on device or managed or on host
-    // It can be
-    // cudaMemoryTypeUnregistered for unregistered host memory,
-    // cudaMemoryTypeHost for registered host memory,
-    // cudaMemoryTypeDevice for device memory or
-    // cudaMemoryTypeManaged for managed memory.
-    checkCudaErrors(cudaPointerGetAttributes(&attributes, raw));
-    type = attributes.type;
-    
-    if(type == cudaMemoryTypeUnregistered || type == cudaMemoryTypeHost){
-      int nbytes = ndata*sizeof(T);
-      checkCudaErrors(cudaMalloc(&data, nbytes));
-      checkCudaErrors(cudaMemcpy(data, raw, nbytes, cudaMemcpyDefault));
-    }
-    else{
-      data = raw;
-    }
+    data = copy2device(raw, ndata, type);
     
     // Now do calculation
     nblock = ndata/nthread;
@@ -539,10 +525,8 @@ class RealDataMeanStddevCalculator {
     
     checkCudaErrors(cudaFreeHost(h_sum));
     checkCudaErrors(cudaFreeHost(h_sum2));
-    
-    if(type == cudaMemoryTypeUnregistered || type == cudaMemoryTypeHost){
-      checkCudaErrors(cudaFree(data));
-    }
+
+    remove_device_copy(type, data);
     
     checkCudaErrors(cudaDeviceSynchronize());
   }
@@ -557,7 +541,6 @@ class RealDataMeanStddevCalculator {
   }
   
  private:
-  cudaPointerAttributes attributes; ///< to hold memory attributes
   enum cudaMemoryType type; ///< memory type
 
   int ndata; ///< Number of input data
@@ -653,28 +636,8 @@ template <typename T1, typename T2>
    :ndata(ndata), nthread(nthread){
 
     // sort out input buffers
-    checkCudaErrors(cudaPointerGetAttributes(&attributes1, raw1));
-    checkCudaErrors(cudaPointerGetAttributes(&attributes2, raw2));
-    type1 = attributes1.type;
-    type2 = attributes2.type;
-    
-    if(type1 == cudaMemoryTypeUnregistered || type1 == cudaMemoryTypeHost){
-      int nbytes = ndata*sizeof(T1);
-      checkCudaErrors(cudaMalloc(&data1, nbytes));
-      checkCudaErrors(cudaMemcpy(data1, raw1, nbytes, cudaMemcpyDefault));
-    }
-    else{
-      data1 = raw1;
-    }
-    
-    if(type2 == cudaMemoryTypeUnregistered || type2 == cudaMemoryTypeHost){
-      int nbytes = ndata*sizeof(T2);
-      checkCudaErrors(cudaMalloc(&data2, nbytes));
-      checkCudaErrors(cudaMemcpy(data2, raw2, nbytes, cudaMemcpyDefault));
-    }
-    else{
-      data2 = raw2;
-    }
+    data1 = copy2device(raw1, ndata, type1);
+    data2 = copy2device(raw2, ndata, type2);
 
     // Create output buffer as managed
     checkCudaErrors(cudaMallocManaged(&data, ndata*sizeof(float), cudaMemAttachGlobal));
@@ -686,13 +649,9 @@ template <typename T1, typename T2>
     getLastCudaError("Kernel execution failed [ cudautil_subtract ]");
 
     // Free intermediate memory
-    if(type1 == cudaMemoryTypeUnregistered || type1 == cudaMemoryTypeHost){
-      checkCudaErrors(cudaFree(data1));
-    }
-    if(type2 == cudaMemoryTypeUnregistered || type2 == cudaMemoryTypeHost){
-      checkCudaErrors(cudaFree(data2));
-    }
-
+    remove_device_copy(type1, data1);
+    remove_device_copy(type2, data2);
+    
     checkCudaErrors(cudaDeviceSynchronize());
   }
   
@@ -707,8 +666,6 @@ template <typename T1, typename T2>
   }
   
  private:
-  cudaPointerAttributes attributes1; ///< to hold memory attributes
-  cudaPointerAttributes attributes2; ///< to hold memory attributes
   enum cudaMemoryType type1; ///< memory type
   enum cudaMemoryType type2; ///< memory type
 
@@ -802,29 +759,8 @@ template <typename TREAL, typename TIMAG, typename TCMPX>
    :ndata(ndata), nthread(nthread){
 
     // Sort out input data
-    checkCudaErrors(cudaPointerGetAttributes(&attributes_real, real));
-    type_real = attributes_real.type;
-
-    if(type_real == cudaMemoryTypeUnregistered || type_real == cudaMemoryTypeHost){
-      int nbytes = ndata*sizeof(TREAL);
-      checkCudaErrors(cudaMalloc(&data_real, nbytes));
-      checkCudaErrors(cudaMemcpy(data_real, real, nbytes, cudaMemcpyDefault));
-    }
-    else{
-      data_real = real;
-    }
-    
-    checkCudaErrors(cudaPointerGetAttributes(&attributes_imag, imag));
-    type_imag = attributes_imag.type;
-
-    if(type_imag == cudaMemoryTypeUnregistered || type_imag == cudaMemoryTypeHost){
-      int nbytes = ndata*sizeof(TIMAG);
-      checkCudaErrors(cudaMalloc(&data_imag, nbytes));
-      checkCudaErrors(cudaMemcpy(data_imag, imag, nbytes, cudaMemcpyDefault));
-    }
-    else{
-      data_imag = imag;
-    }
+    data_real = copy2device(real, ndata, type_real);
+    data_imag = copy2device(imag, ndata, type_imag);
 
     // Create output buffer
     checkCudaErrors(cudaMallocManaged(&data, ndata*sizeof(TCMPX), cudaMemAttachGlobal));
@@ -837,12 +773,8 @@ template <typename TREAL, typename TIMAG, typename TCMPX>
     getLastCudaError("Kernel execution failed [ cudautil_complexbuilder ]");
 
     // Free intermediate memory
-    if(type_imag == cudaMemoryTypeUnregistered || type_imag == cudaMemoryTypeHost){
-      checkCudaErrors(cudaFree(data_imag));
-    }
-    if(type_real == cudaMemoryTypeUnregistered || type_real == cudaMemoryTypeHost){
-      checkCudaErrors(cudaFree(data_real));
-    }
+    remove_device_copy(type_real, data_real);
+    remove_device_copy(type_imag, data_imag);
 
     checkCudaErrors(cudaDeviceSynchronize());
   }
@@ -861,8 +793,6 @@ template <typename TREAL, typename TIMAG, typename TCMPX>
   TREAL *data_real = NULL;
   TIMAG *data_imag = NULL;
 
-  cudaPointerAttributes attributes_real; ///< to hold memory attributes
-  cudaPointerAttributes attributes_imag; ///< to hold memory attributes
   enum cudaMemoryType type_real; ///< memory type
   enum cudaMemoryType type_imag; ///< memory type
   
@@ -954,17 +884,7 @@ template <typename TCMPX, typename TREAL, typename TIMAG>
    :ndata(ndata), nthread(nthread){
 
     // Sort out input buffer
-    checkCudaErrors(cudaPointerGetAttributes(&attributes, cmpx));
-    type = attributes.type;
-
-    if(type == cudaMemoryTypeUnregistered || type == cudaMemoryTypeHost){
-      int nbytes = ndata*sizeof(TCMPX);
-      checkCudaErrors(cudaMalloc(&data, nbytes));
-      checkCudaErrors(cudaMemcpy(data, cmpx, nbytes, cudaMemcpyDefault));
-    }
-    else{
-      data = cmpx;
-    }
+    data = copy2device(cmpx, ndata, type);
     
     // Create managed memory for output
     checkCudaErrors(cudaMallocManaged(&real, ndata*sizeof(TREAL), cudaMemAttachGlobal));
@@ -978,10 +898,7 @@ template <typename TCMPX, typename TREAL, typename TIMAG>
     getLastCudaError("Kernel execution failed [ cudautil_complexsplitter ]");
 
     // Free intermediate memory
-    if(type == cudaMemoryTypeUnregistered || type == cudaMemoryTypeHost){
-      checkCudaErrors(cudaFree(data));
-    }
-    
+    remove_device_copy(type, data);    
     checkCudaErrors(cudaDeviceSynchronize());
   }
   
@@ -1000,7 +917,6 @@ template <typename TCMPX, typename TREAL, typename TIMAG>
  private:
   TCMPX *data = NULL;
   
-  cudaPointerAttributes attributes; ///< to hold memory attributes
   enum cudaMemoryType type; ///< memory type
     
   int ndata;
@@ -1067,17 +983,7 @@ class AmplitudePhaseCalculator{
    :ndata(ndata), nthread(nthread){
 
     // sourt out input data
-    checkCudaErrors(cudaPointerGetAttributes(&attributes, raw));
-    type = attributes.type;
-
-    if(type == cudaMemoryTypeUnregistered || type == cudaMemoryTypeHost){
-      int nbytes = ndata*sizeof(T);
-      checkCudaErrors(cudaMalloc(&data, nbytes));
-      checkCudaErrors(cudaMemcpy(data, raw, nbytes, cudaMemcpyDefault));
-    }
-    else{
-      data = raw;
-    }
+    data = copy2device(raw, ndata, type);
     
     // Get output buffer as managed
     checkCudaErrors(cudaMallocManaged(&amp, ndata * sizeof(float), cudaMemAttachGlobal));
@@ -1088,9 +994,8 @@ class AmplitudePhaseCalculator{
     nblock = (nblock>1)?nblock:1;
     cudautil_amplitude_phase<<<nblock, nthread>>>(data, amp, pha, ndata);
 
-    if(type == cudaMemoryTypeUnregistered || type == cudaMemoryTypeHost){
-      checkCudaErrors(cudaFree(data));
-    }
+    remove_device_copy(type, data);
+    
     checkCudaErrors(cudaDeviceSynchronize());
   }
   
@@ -1112,7 +1017,6 @@ class AmplitudePhaseCalculator{
   int nblock; ///< Number of CUDA blocks
   int nthread; ///< number of threas per block
   
-  cudaPointerAttributes attributes; ///< to hold memory attributes
   enum cudaMemoryType type; ///< memory type
   
   T *data; ///< To get hold on the input data
@@ -1388,17 +1292,8 @@ class RealDataHistogram{
    :ndata(ndata), min(min), max(max), nblock(nblock), nthread(nthread){
 
     // Sort out input data
-    checkCudaErrors(cudaPointerGetAttributes(&attributes, raw));
-    type = attributes.type;
-
-    if(type == cudaMemoryTypeUnregistered || type == cudaMemoryTypeHost){
-      int nbytes = ndata*sizeof(T);
-      checkCudaErrors(cudaMalloc(&input, nbytes));
-      checkCudaErrors(cudaMemcpy(input, raw, nbytes, cudaMemcpyDefault));
-    }
-    else{
-      input = raw;
-    }
+    input = copy2device(raw, ndata, type);
+    
     // Create output buffer as managed
     checkCudaErrors(cudaMallocManaged(&data, NUM_BINS*sizeof(unsigned), cudaMemAttachGlobal));
 
@@ -1414,9 +1309,7 @@ class RealDataHistogram{
     getLastCudaError("Kernel execution failed [ cudautil_histogram_final ]");
 
     // free intermediate data
-    if(type == cudaMemoryTypeUnregistered || type == cudaMemoryTypeHost){
-      checkCudaErrors(cudaFree(input));
-    }
+    remove_device_copy(type, input);
     checkCudaErrors(cudaDeviceSynchronize());
   }
   
@@ -1431,7 +1324,6 @@ class RealDataHistogram{
   }
     
  private:
-  cudaPointerAttributes attributes; ///< to hold memory attributes
   enum cudaMemoryType type; ///< memory type
 
   T *input; ///< input buffer
