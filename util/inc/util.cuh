@@ -1026,8 +1026,7 @@ class AmplitudePhaseCalculator{
 template <typename T>
 class DeviceMemoryAllocator {
  public:
-  T *data = NULL; ///< Device memory
-  T *h_data = NULL; ///< Host memory
+  T *data = NULL; ///< Device memory or managed memory
   
   /*! Constructor of class DeviceMemoryAllocator
    *
@@ -1037,9 +1036,11 @@ class DeviceMemoryAllocator {
    */
  DeviceMemoryAllocator(int ndata, int host=0)
    :ndata(ndata), host(host){
-    checkCudaErrors(cudaMalloc(&data, ndata*sizeof(T)));
     if(host){
-      checkCudaErrors(cudaMallocHost(&h_data, ndata*sizeof(T)));
+      checkCudaErrors(cudaMallocManaged(&data, ndata*sizeof(T), cudaMemAttachGlobal));
+    }
+    else{
+      checkCudaErrors(cudaMalloc(&data, ndata*sizeof(T)));
     }
   }
   
@@ -1050,9 +1051,6 @@ class DeviceMemoryAllocator {
    */
   ~DeviceMemoryAllocator(){
     checkCudaErrors(cudaFree(data));
-    if(host){
-      checkCudaErrors(cudaFreeHost(h_data));
-    }
   }
 
  private:
@@ -1148,7 +1146,7 @@ class HostDataExtractor {
 template <typename T>
 class ManagedMemoryAllocator {
  public:
-  T *data = NULL; ///< Managed memory
+  T *data = NULL; ///< Managed memory 
   
   /*! Constructor of class ManagedMemoryAllocator
    *
@@ -1182,8 +1180,7 @@ class ManagedMemoryAllocator {
 template <typename T>
 class HostMemoryAllocator {
  public:
-  T *data = NULL; ///< Host memory
-  T *d_data = NULL; ///< Device memory
+  T *data = NULL; ///< Host memory or managed memory
   
   /*! Constructor of class HostMemoryAllocator
    *
@@ -1193,9 +1190,11 @@ class HostMemoryAllocator {
    */
  HostMemoryAllocator(int ndata, int device=0)
    :ndata(ndata), device(device){
-    checkCudaErrors(cudaMallocHost(&data, ndata*sizeof(T)));
     if(device){
-      checkCudaErrors(cudaMalloc(&d_data, ndata*sizeof(T)));
+      checkCudaErrors(cudaMallocManaged(&data, ndata*sizeof(T), cudaMemAttachGlobal));
+    }
+    else{
+      checkCudaErrors(cudaMallocHost(&data, ndata*sizeof(T)));
     }
   }
   
@@ -1207,7 +1206,7 @@ class HostMemoryAllocator {
   ~HostMemoryAllocator(){
     checkCudaErrors(cudaFreeHost(data));
     if(device){
-      checkCudaErrors(cudaFree(d_data));
+      checkCudaErrors(cudaFree(data));
     }
   }
 
