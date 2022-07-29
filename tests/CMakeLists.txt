@@ -28,3 +28,8 @@ add_executable(test_mean_stddev_calculators test_mean_stddev_calculators.cu)
 target_include_directories(test_mean_stddev_calculators PRIVATE ${UTIL_INC} ${CUDA_SAMPLES_COMMON_INC})
 target_link_libraries(test_mean_stddev_calculators PRIVATE Catch2WithMain util curand)
 set_target_properties(test_mean_stddev_calculators PROPERTIES LINKER_LANGUAGE CUDA)
+
+add_executable(test_differentiators test_differentiators.cu)
+target_include_directories(test_differentiators PRIVATE ${UTIL_INC} ${CUDA_SAMPLES_COMMON_INC})
+target_link_libraries(test_differentiators PRIVATE Catch2WithMain util curand)
+set_target_properties(test_differentiators PROPERTIES LINKER_LANGUAGE CUDA)

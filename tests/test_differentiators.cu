@@ -34,7 +34,7 @@ int calculate_mean_stddev(float *data, int ndata, float &mean, float &stddev){
 // To check it against wiith given mean and standard deviation is not good
 // because random number generator may not generate data strictly follow mean and standard deviation
 // for example, because we do not generate enough number of data points
-TEST_CASE("RealDataMeanStddevCalculator", "RealDataMeanStddevCalculator") {
+TEST_CASE("RealDataDifferentiator", "RealDataDifferentiator") {
   
   int ndata = 102400000;
   float mean = 10;
@@ -53,34 +53,47 @@ TEST_CASE("RealDataMeanStddevCalculator", "RealDataMeanStddevCalculator") {
   curandGenerator_t gen;
   checkCudaErrors(curandCreateGenerator(&gen, CURAND_RNG_PSEUDO_DEFAULT));
   checkCudaErrors(curandSetPseudoRandomGeneratorSeed(gen, time(NULL)));
-  RealDataGeneratorNormal normal_data(gen, mean, stddev, ndata);
+  RealDataGeneratorNormal normal_data1(gen, mean, stddev, ndata);
+  RealDataGeneratorNormal normal_data2(gen, mean, stddev, ndata);
   print_cuda_memory_info();
 
-  // get mean and stddev with CUDA code
-  RealDataMeanStddevCalculator<float> mean_stddev(normal_data.data, ndata, nthread, 7);
-  
+  // get difference with CUDA code
+  RealDataDifferentiator<float, float> diff_g(normal_data1.data, normal_data2.data, ndata, nthread);
+
+  // Get mean and stddev with CUDA code
+  RealDataMeanStddevCalculator<float> mean_stddev_g(diff_g.data, ndata, nthread, 7);
+
   CUDA_STOPTIME(g);
   cout << "elapsed time with GPU is " << gtime << " milliseconds" << endl;
 
-  float mean_g   = mean_stddev.mean;
-  float stddev_g = mean_stddev.stddev;
+  float mean_g   = mean_stddev_g.mean;
+  float stddev_g = mean_stddev_g.stddev;
   
-  cout << "CUDA mean is " << mean_g
+  cout << "GPU mean is " << mean_g
        << " stddev is " << stddev_g
        << endl;
-  
-  // get mean and stddev from c code
-  float mean_c, stddev_c;
-  std::chrono::steady_clock::time_point begin = std::chrono::steady_clock::now();
-  calculate_mean_stddev(normal_data.data, ndata, mean_c, stddev_c);
-  std::chrono::steady_clock::time_point end = std::chrono::steady_clock::now();
 
-  cout << "elapsed time with CPU is " << std::chrono::duration_cast<std::chrono::milliseconds>(end - begin).count() << " milliseconds" << endl;
+  // Work on CPU
+  ManagedMemoryAllocator<float> diff_c(ndata);
+  chrono::steady_clock::time_point begin = chrono::steady_clock::now();
+
+  // Get difference with CPU
+  transform(normal_data1.data, normal_data1.data+ndata, normal_data2.data, diff_c.data, minus<float>());
+
+  // Get mean and stddev with CUDA code
+  // I only care about difference, so I use cuda mean and standard deviation calculator
+  RealDataMeanStddevCalculator<float> mean_stddev_c(diff_c.data, ndata, nthread, 7);
+
+  chrono::steady_clock::time_point end = chrono::steady_clock::now();
+  cout << "elapsed time with CPU is " << chrono::duration_cast<chrono::milliseconds>(end - begin).count() << " milliseconds" << endl;
   
-  cout << "C mean is " << mean_c
+  float mean_c   = mean_stddev_c.mean;
+  float stddev_c = mean_stddev_c.stddev;
+  
+  cout << "CPU mean is " << mean_c
        << " stddev is " << stddev_c
        << endl;
-  
+
   REQUIRE(mean_g   == Approx(mean_c).epsilon(epsilon));
   REQUIRE(stddev_g == Approx(stddev_c).epsilon(epsilon));
 }
