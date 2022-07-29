@@ -103,7 +103,7 @@ TEST_CASE("RealDataGeneratorUniform", "RealDataGeneratorUniform") {
   print_cuda_memory_info();
 
   // Get mean and standard deviation
-  RealDataMeanStddevCalcultor<float> mean_stddev(uniform_data.data, ndata, nthread, 7);
+  RealDataMeanStddevCalculator<float> mean_stddev(uniform_data.data, ndata, nthread, 7);
   cout << "uniform data mean is " << mean_stddev.mean << "\t"
        << "uniform data stddev is " << mean_stddev.stddev 
        << endl;
@@ -147,7 +147,7 @@ TEST_CASE("RealDataGeneratorNormal", "RealDataGeneratorNormal") {
   print_cuda_memory_info();
 
   // Get mean and standard deviation
-  RealDataMeanStddevCalcultor<float> mean_stddev(normal_data.data, ndata, nthread, 7);
+  RealDataMeanStddevCalculator<float> mean_stddev(normal_data.data, ndata, nthread, 7);
   cout << "normal data mean is " << mean_stddev.mean << "\t"
        << "normal data stddev is " << mean_stddev.stddev 
        << endl;

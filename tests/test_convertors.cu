@@ -42,7 +42,7 @@ TEST_CASE("RealDataConvertor", "RealDataConvertor") {
   RealDataDifferentiator<float, half> normal_data_diff(normal_data.data, normal_data_half.data, ndata, nthread);
   
   // Get mean and standard deviation
-  RealDataMeanStddevCalcultor<float> mean_stddev(normal_data_diff.data, ndata, nthread, 7);
+  RealDataMeanStddevCalculator<float> mean_stddev(normal_data_diff.data, ndata, nthread, 7);
   cout << "normal data mean is " << mean_stddev.mean << "\t"
        << "normal data stddev is " << mean_stddev.stddev 
        << endl;

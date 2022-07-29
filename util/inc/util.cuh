@@ -420,14 +420,14 @@ __global__ void cudautil_pow(const T *d_data, float *d_float, float *d_float2, i
 }
 
 template <typename T>
-class RealDataMeanStddevCalcultor {
+class RealDataMeanStddevCalculator {
   
  public:
   float mean;   ///< Mean of the difference between input two vectors, always in float
   float stddev; ///< Standard deviation of the difference between input two vectors, always in float
 
   
-  //! Constructor of class RealDataMeanStddevCalcultor
+  //! Constructor of class RealDataMeanStddevCalculator
   /*!
    * - initialise the class
    * - create required device memory
@@ -453,7 +453,7 @@ class RealDataMeanStddevCalcultor {
    * \see cudautil_pow, reduce, scalar_typecast
    *
    */
- RealDataMeanStddevCalcultor(T *raw, int ndata, int nthread, int method)
+ RealDataMeanStddevCalculator(T *raw, int ndata, int nthread, int method)
    :ndata(ndata), nthread(nthread), method(method){
 
     /* Sort out input buffers */
@@ -528,12 +528,12 @@ class RealDataMeanStddevCalcultor {
     checkCudaErrors(cudaDeviceSynchronize());
   }
   
-  //! Deconstructor of RealDataMeanStddevCalcultor class.
+  //! Deconstructor of RealDataMeanStddevCalculator class.
   /*!
    * 
    * - free device memory at the class life end
    */
-  ~RealDataMeanStddevCalcultor(){
+  ~RealDataMeanStddevCalculator(){
     checkCudaErrors(cudaDeviceSynchronize());
   }
   
