@@ -31,9 +31,8 @@ int calculate_mean_stddev(float *data, int ndata, float &mean, float &stddev){
   return EXIT_SUCCESS;
 }
 
-// To check it against wiith given mean and standard deviation is not good
-// because random number generator may not generate data strictly follow mean and standard deviation
-// for example, because we do not generate enough number of data points
+// Here we only check float data type, do we need to check other types?
+// We probably should check data type cast directly for other types
 TEST_CASE("RealDataDifferentiator", "RealDataDifferentiator") {
   
   int ndata = 102400000;
