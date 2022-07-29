@@ -484,37 +484,37 @@ class RealDataMeanStddevCalculator {
     nblock = ndata/nthread;
     nblock = (nblock>1)?nblock:1;
     
-    checkCudaErrors(cudaMalloc(&d_float,  ndata*sizeof(float)));
-    checkCudaErrors(cudaMalloc(&d_float2, ndata*sizeof(float)));
+    checkCudaErrors(cudaMallocManaged(&d_float,  ndata*sizeof(float), cudaMemAttachGlobal));
+    checkCudaErrors(cudaMallocManaged(&d_float2, ndata*sizeof(float), cudaMemAttachGlobal));
     
-    checkCudaErrors(cudaMalloc(&d_reduction, nblock*sizeof(float)));
-    checkCudaErrors(cudaMallocHost(&h_sum,  sizeof(float)));
-    checkCudaErrors(cudaMallocHost(&h_sum2, sizeof(float)));
+    checkCudaErrors(cudaMallocManaged(&d_reduction, nblock*sizeof(float), cudaMemAttachGlobal));
     
     cudautil_pow<<<nblock, nthread>>>(data, d_float, d_float2, ndata);
     getLastCudaError("Kernel execution failed [ cudautil_pow ]");
     
     // First reduce mean data
     reduce(ndata,  nthread, nblock, method, d_float, d_reduction);
+    checkCudaErrors(cudaDeviceSynchronize());
     if(nblock > 1){
       reduce(nblock, nthread, 1, method, d_reduction, d_float);
-      checkCudaErrors(cudaMemcpy(h_sum, d_float,     sizeof(float), cudaMemcpyDefault));
+      checkCudaErrors(cudaDeviceSynchronize());
+      mean = d_float[0]/(float)ndata;
     }else{
-      checkCudaErrors(cudaMemcpy(h_sum, d_reduction, sizeof(float), cudaMemcpyDefault));
+      mean = d_reduction[0]/(float)ndata;
     }
     
     // Second reduce mean power 2 data
     reduce(ndata,  nthread, nblock, method, d_float2, d_reduction);
+    checkCudaErrors(cudaDeviceSynchronize());
     if(nblock > 1){
       reduce(nblock, nthread, 1, method, d_reduction, d_float2);
-      checkCudaErrors(cudaMemcpy(h_sum2, d_float2,    sizeof(float), cudaMemcpyDefault));
+      checkCudaErrors(cudaDeviceSynchronize());
+      mean2 = d_float2[0]/(float)ndata;
     }else{
-      checkCudaErrors(cudaMemcpy(h_sum2, d_reduction, sizeof(float), cudaMemcpyDefault));
+      mean2 = d_reduction[0]/(float)ndata;
     }
 
     // Got final numbers
-    mean  = h_sum[0]/(float)ndata;
-    mean2 = h_sum2[0]/(float)ndata;    
     stddev = sqrtf(mean2 - mean*mean);
 
     // As we only need stddev and mean
@@ -523,9 +523,6 @@ class RealDataMeanStddevCalculator {
     checkCudaErrors(cudaFree(d_float2));
     checkCudaErrors(cudaFree(d_reduction));
     
-    checkCudaErrors(cudaFreeHost(h_sum));
-    checkCudaErrors(cudaFreeHost(h_sum2));
-
     remove_device_copy(type, data);
     
     checkCudaErrors(cudaDeviceSynchronize());
@@ -554,8 +551,6 @@ class RealDataMeanStddevCalculator {
 
   float *d_reduction; ///< it holds intermediate float data duration data d_reduction on device
   
-  float *h_sum;  ///< h_sum of difference
-  float *h_sum2; ///< h_sum of difference power of 2
   float mean2; ///< mean of difference power of 2
 };
 
@@ -1301,7 +1296,7 @@ class RealDataHistogram{
     dim3 grid_smem(nblock);  // Do not want have too many blocks
     dim3 grid_final(nblock/nthread);
     
-    checkCudaErrors(cudaMalloc(&result, nblock*NUM_BINS*sizeof(unsigned)));
+    checkCudaErrors(cudaMallocManaged(&result, nblock*NUM_BINS*sizeof(unsigned), cudaMemAttachGlobal));
     
     cudautil_histogram<<<grid_smem, nthread>>>(input, ndata, min, max, result);
     getLastCudaError("Kernel execution failed [ cudautil_histogram ]");
