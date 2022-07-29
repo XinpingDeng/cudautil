@@ -11,43 +11,57 @@
 #include <catch2/catch_test_macros.hpp>
 #include <catch2/catch_approx.hpp>
 
+#include <numeric>
+#include <vector>
+#include <algorithm>
+
 #define STRLEN 256
 
 using namespace std;
 using namespace Catch;
 
 // Always work with float with test c code
-int calculate_mean(float *data, int ndata, float &mean, float &mean2){
+int calculate_mean_stddev(float *data, int ndata, float &mean, float &stddev){
 
-  mean = 0;
-  mean2 =0;
+  vector<float> v(data, data + ndata);
   
-  for(int i = 0; i < ndata; i++){
-    float d = data[i];
-    mean += d;
-    mean2 += d*d;
-  }  
-
-  mean  /= (float)ndata;
-  mean2 /= (float)ndata;
+  mean = accumulate(v.begin(), v.end(), 0.0)/v.size();
+  
+  vector<float> diff(v.size());
+  std::transform(v.begin(), v.end(), diff.begin(), [mean](float x) { return x - mean; });
+  stddev = inner_product(diff.begin(), diff.end(), diff.begin(), 0.0)/v.size();
+  
+  //float mean2 =0;
+  //
+  //mean = 0;
+  //for(int i = 0; i < ndata; i++){
+  //  float d = data[i];
+  //  mean += d;
+  //  mean2 += d*d;
+  //}  
+  //
+  //cout << mean << " " << mean2 << endl;
+  //
+  //mean  /= (float)ndata;
+  //mean2 /= (float)ndata;
+  //
+  //stddev = sqrtf(mean2 - mean*mean);
+  //
+  //cout << stddev << " " << mean << " " << mean2 << endl;
   
   return EXIT_SUCCESS;
 }
 
-int calculate_stddev(float mean, float mean2, float &stddev){
-
-  stddev = sqrtf(mean2 - mean*mean);
-  
-  return EXIT_SUCCESS;
-}
-
+// To check it against wiith given mean and standard deviation is not good
+// because random number generator may not generate data strictly follow mean and standard deviation
+// for example, because we do not generate enough number of data points
 TEST_CASE("RealDataMeanStddevCalculator", "RealDataMeanStddevCalculator") {
-
+  
   int ndata = 102400000;
-  float mean = 0;
+  float mean = 10;
   float stddev = 10;
   int nthread = 128;
-  float epsilon = 1.0E-3;
+  float epsilon = 1.0E-5;
   
   cudaEvent_t g_start;
   cudaEvent_t g_stop;
@@ -65,23 +79,25 @@ TEST_CASE("RealDataMeanStddevCalculator", "RealDataMeanStddevCalculator") {
 
   // get mean and stddev with CUDA code
   RealDataMeanStddevCalculator<float> mean_stddev(normal_data.data, ndata, nthread, 7);
-
-  cout << "CUDA mean is " << mean_stddev.mean
-       << " stddev is " << mean_stddev.stddev
-       << endl;
   
   CUDA_STOPTIME(g);
   cout << "elapsed time is " << gtime << " milliseconds" << endl;
 
-  // get mean and stddev from c code
-  float mean_c, mean2, stddev_c;
-  calculate_mean(normal_data.data, ndata, mean_c, mean2);
-  calculate_stddev(mean_c, mean2, stddev_c);
-
-  cout << "C mean is " << mean_c
-       << " stddev is " << stddev
+  float mean_g   = mean_stddev.mean;
+  float stddev_g = mean_stddev.stddev;
+  
+  cout << "CUDA mean is " << mean_g
+       << " stddev is " << stddev_g
        << endl;
   
-  REQUIRE(mean_stddev.mean   == Approx(mean_c).epsilon(epsilon));
-  REQUIRE(mean_stddev.stddev == Approx(stddev).epsilon(epsilon));
+  // get mean and stddev from c code
+  float mean_c, stddev_c;
+  calculate_mean_stddev(normal_data.data, ndata, mean_c, stddev_c);
+
+  cout << "C mean is " << mean_c
+       << " stddev is " << stddev_c
+       << endl;
+  
+  REQUIRE(mean_g   == Approx(mean_c).epsilon(epsilon));
+  REQUIRE(stddev_g == Approx(stddev_c).epsilon(epsilon));
 }
