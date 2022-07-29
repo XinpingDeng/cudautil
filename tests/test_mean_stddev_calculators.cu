@@ -14,6 +14,7 @@
 #include <numeric>
 #include <vector>
 #include <algorithm>
+#include <chrono>
 
 #define STRLEN 256
 
@@ -39,7 +40,7 @@ TEST_CASE("RealDataMeanStddevCalculator", "RealDataMeanStddevCalculator") {
   float mean = 10;
   float stddev = 10;
   int nthread = 128;
-  float epsilon = 1.0E-5;
+  float epsilon = 1.0E-6;
   
   cudaEvent_t g_start;
   cudaEvent_t g_stop;
@@ -59,7 +60,7 @@ TEST_CASE("RealDataMeanStddevCalculator", "RealDataMeanStddevCalculator") {
   RealDataMeanStddevCalculator<float> mean_stddev(normal_data.data, ndata, nthread, 7);
   
   CUDA_STOPTIME(g);
-  cout << "elapsed time is " << gtime << " milliseconds" << endl;
+  cout << "elapsed time with GPU is " << gtime << " milliseconds" << endl;
 
   float mean_g   = mean_stddev.mean;
   float stddev_g = mean_stddev.stddev;
@@ -70,8 +71,12 @@ TEST_CASE("RealDataMeanStddevCalculator", "RealDataMeanStddevCalculator") {
   
   // get mean and stddev from c code
   float mean_c, stddev_c;
+  std::chrono::steady_clock::time_point begin = std::chrono::steady_clock::now();
   calculate_mean_stddev(normal_data.data, ndata, mean_c, stddev_c);
+  std::chrono::steady_clock::time_point end = std::chrono::steady_clock::now();
 
+  cout << "elapsed time with GPU is " << std::chrono::duration_cast<std::chrono::milliseconds>(end - begin).count() << " milliseconds" << endl;
+  
   cout << "C mean is " << mean_c
        << " stddev is " << stddev_c
        << endl;
