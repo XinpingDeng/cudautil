@@ -103,6 +103,45 @@ template <typename TREAL, typename TIMAG, typename TCMPX>
   scalar_typecast(y, z.y);
 }
 
+/*! A template function to get a buffer into device
+  It check where is the input buffer, if the buffer is on device, it just pass the pointer
+  otherwise it alloc new buffer on device and copy the data to it
+*/
+template <typename T>
+int copy2device(T *raw, T *data, int ndata, enum cudaMemoryType &type){
+  cudaPointerAttributes attributes; ///< to hold memory attributes
+  
+  // cudaMemoryTypeUnregistered for unregistered host memory,
+  // cudaMemoryTypeHost for registered host memory,
+  // cudaMemoryTypeDevice for device memory or
+  // cudaMemoryTypeManaged for managed memory.
+  checkCudaErrors(cudaPointerGetAttributes(&attributes, raw));
+  type = attributes.type;
+  
+  if(type == cudaMemoryTypeUnregistered || type == cudaMemoryTypeHost){
+    int nbytes = ndata*sizeof(T);
+    checkCudaErrors(cudaMalloc(&data, nbytes));
+    checkCudaErrors(cudaMemcpy(data, raw, nbytes, cudaMemcpyDefault));
+  }
+  else{
+    data = raw;
+  }
+  
+  return EXIT_SUCCESS;
+}
+
+/*! A function to free memory if it is a copy of a host memory
+ */
+template<typename T>
+int remove_device_copy(enum cudaMemoryType type, T *data){
+  
+  if(type == cudaMemoryTypeUnregistered || type == cudaMemoryTypeHost){
+    checkCudaErrors(cudaFree(data));
+  }
+  
+  return EXIT_SUCCESS;
+}
+
 /*! A kernel to contraint random number from range (0.0 1.0] to range (exclude include] or [include exclude).
  *
  * \param[in, out] data    The input data in range (0.0 1.0] and new data in range (exclude include] or [include exclude) is also returned with it.
@@ -326,25 +365,8 @@ template <typename TIN, typename TOUT>
  RealDataConvertor(TIN *raw, int ndata, int nthread)
    :ndata(ndata), nthread(nthread){
 
-    /* Sort out input buffers */
-    // Check if the input data in on device or managed or on host
-    // It can be
-    // cudaMemoryTypeUnregistered for unregistered host memory,
-    // cudaMemoryTypeHost for registered host memory,
-    // cudaMemoryTypeDevice for device memory or
-    // cudaMemoryTypeManaged for managed memory.
-    checkCudaErrors(cudaPointerGetAttributes(&attributes, raw));
-    type = attributes.type;
-
-    if(type == cudaMemoryTypeUnregistered || type == cudaMemoryTypeHost){
-      int nbytes = ndata*sizeof(TIN);
-      checkCudaErrors(cudaMalloc(&input, nbytes));
-      checkCudaErrors(cudaMemcpy(input, raw, nbytes, cudaMemcpyDefault));
-    }
-    else{
-      input = raw;
-    }
-
+    copy2device(raw, input, ndata, type);
+    
     // Create output buffer as managed
     checkCudaErrors(cudaMallocManaged(&data, ndata*sizeof(TOUT), cudaMemAttachGlobal));
 
@@ -355,9 +377,7 @@ template <typename TIN, typename TOUT>
     getLastCudaError("Kernel execution failed [ cudautil_convert ]");
 
     // Free intermediate memory
-    if(type == cudaMemoryTypeUnregistered || type == cudaMemoryTypeHost){
-      checkCudaErrors(cudaFree(input));
-    }
+    remove_device_copy(type, input);
     
     checkCudaErrors(cudaDeviceSynchronize());
   }
@@ -373,7 +393,6 @@ template <typename TIN, typename TOUT>
   }
   
  private:
-  cudaPointerAttributes attributes; ///< to hold memory attributes
   enum cudaMemoryType type; ///< memory type
   TIN *input = NULL; ///< An internal pointer to input data
   int ndata;   ///< Number of generated data
