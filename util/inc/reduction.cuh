@@ -38,9 +38,10 @@
 #include <cooperative_groups.h>
 #include <cooperative_groups/reduce.h>
 #include <stdio.h>
-#include "util.h"
 
 namespace cg = cooperative_groups;
+
+static inline bool isPow2(unsigned int x) { return ((x & (x - 1)) == 0); }
 
 // Utility class used to avoid linker errors with extern
 // unsized shared memory arrays with templated type

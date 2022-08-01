@@ -13,40 +13,90 @@
 
 #define NUM_BINS 256
 
-#ifdef __cplusplus
-extern "C" {
-#endif
-  /*! \brief A function to check CUDA global memory.
-   *
-   * This function prints out total and available CUDA global memory in MBytes. 
-   * 
-   */
-  int print_cuda_memory_info();
-#ifdef __cplusplus
-}
-#endif
-
-#include <iostream>
-static inline std::ostream& operator<<(std::ostream& os, const cuComplex& data){
-  os << data.x << ' ' << data.y << ' ';
-  return os;
-}
-
-__device__ __host__ static inline cuComplex operator*(cuComplex a, float b) { return make_cuComplex(a.x*b, a.y*b);}
-__device__ __host__ static inline cuComplex operator*(float a, cuComplex b) { return make_cuComplex(b.x*a, b.y*a);}
-__device__ __host__ static inline cuComplex operator/(cuComplex a, float b) { return make_cuComplex(a.x/b, a.y/b);}
-__device__ __host__ static inline void operator/=(cuComplex &a, float b)     { a.x/=b;   a.y/=b;}
-__device__ __host__ static inline void operator+=(cuComplex &a, cuComplex b) { a.x+=b.x; a.y+=b.y;}
-__device__ __host__ static inline void operator-=(cuComplex &a, cuComplex b) { a.x-=b.x; a.y-=b.y;}
-
 #define CUDA_STARTTIME(x)  cudaEventRecord(x ## _start, 0);
-
 #define CUDA_STOPTIME(x) {					\
     float dtime;						\
     cudaEventRecord(x ## _stop, 0);				\
     cudaEventSynchronize(x ## _stop);				\
     cudaEventElapsedTime(&dtime, x ## _start, x ## _stop);	\
     x ## time += dtime; }
+
+inline int print_cuda_memory_info() {
+  //cudaError_t status;
+  size_t free, total;
+  
+  checkCudaErrors(cudaMemGetInfo(&free, &total));
+  
+  fprintf(stdout, "GPU free memory is %.1f, total is %.1f MBbytes\n",
+	  free/1024.0/1024, total/1024.0/1024);
+  
+  if(free<=0){
+    fprintf(stderr, "Use too much GPU memory.\n");
+    exit(EXIT_FAILURE);
+  }
+  
+  return EXIT_SUCCESS;
+}
+
+/*! Overload cout with cuda complex data type
+*/
+#include <iostream>
+static inline std::ostream& operator<<(std::ostream& os, const cuComplex& data){
+  os << data.x << ' ' << data.y << ' ';
+  return os;
+}
+
+/*! Overload * operator to multiple a cuComplex with a float for device and host code
+ *
+ * \param[in] a Input cuComplex number
+ * \param[in] b Input float number
+ * \returns   \a a * \a b
+ *
+ */
+__device__ __host__ static inline cuComplex operator*(cuComplex a, float b) { return make_cuComplex(a.x*b, a.y*b);}
+
+/*! Overload * operator to multiple a float with a cuComplex for device and host code
+ *
+ * \param[in] a Input float number
+ * \param[in] b Input cuComplex number
+ * \returns   \a a * \a b
+ *
+ */
+__device__ __host__ static inline cuComplex operator*(float a, cuComplex b) { return make_cuComplex(b.x*a, b.y*a);}
+
+/*! Overload / operator to divide a cuComplex with a float for device and host code
+ *
+ * \param[in, out] a A cuComplex number which will be divided by float \a b 
+ * \param[in]      b Input float number
+ * \returns        \a a / \a b
+ *
+ */
+__device__ __host__ static inline cuComplex operator/(cuComplex a, float b) { return make_cuComplex(a.x/b, a.y/b);}
+
+/*! Overload /= operator to divide a cuComplex with a float before it is accumulated to itself for device and host code
+ *
+ * \param[in, out] a A cuComplex number which will be divided by float \a b and accumulated to
+ * \param[in]      b Input float number
+ *
+ */
+__device__ __host__ static inline void operator/=(cuComplex &a, float b)     { a.x/=b;   a.y/=b;}
+
+/*! Overload /= operator to plus a cuComplex with a cuComplex before it is accumulated to itself for device and host code
+ *
+ * \param[in, out] a A cuComplex number which will be added by cuComplex \a b and accumulated to
+ * \param[in]      b Input cuComplex number
+ *
+ */
+__device__ __host__ static inline void operator+=(cuComplex &a, cuComplex b) { a.x+=b.x; a.y+=b.y;}
+
+/*! Overload /= operator to minus a cuComplex with a cuComplex before it is accumulated to itself for device and host code
+ *
+ * \param[in, out] a A cuComplex number which will be minused by cuComplex \a b and accumulated to
+ * \param[in]      b Input cuComplex number
+ *
+ */
+__device__ __host__ static inline void operator-=(cuComplex &a, cuComplex b) { a.x-=b.x; a.y-=b.y;}
+
 
 #include "reduction.cuh"
 #define CUDAUTIL_FLOAT2HALF __float2half
@@ -72,19 +122,6 @@ __device__ static inline void scalar_typecast(const int a,      float &b) { b = 
 __device__ static inline void scalar_typecast(const int16_t a,  float &b) { b = a;}
 __device__ static inline void scalar_typecast(const int8_t a,   float &b) { b = a;}
 __device__ static inline void scalar_typecast(const unsigned a, float &b) { b = a;}
-
-//// We need more type case overload functions here
-//// The following convert float to other types
-//template <typename T1, typename T2>
-//__device__ static inline void scalar_typecast(const T1 a, T2 &b){b = a;}
-//
-//template <typename T>
-//__device__ static inline void scalar_typecast(const float a, T &b) { b = CUDAUTIL_FLOAT2INT(a);}
-//
-//// The following are special cases
-//__device__ static inline void scalar_typecast(const float a, half     &b) { b = CUDAUTIL_FLOAT2HALF(a);}
-//__device__ static inline void scalar_typecast(const half a,  float    &b) { b = CUDAUTIL_HALF2FLOAT(a);}
-//__device__ static inline void scalar_typecast(const float a, unsigned &b) { b = CUDAUTIL_FLOAT2UINT(a);}
 
 template <typename TMIN, typename TSUB, typename TRES>
 __device__ static inline void scalar_subtract(const TMIN minuend, const TSUB subtrahend, TRES &result) {
@@ -150,9 +187,23 @@ int remove_device_copy(enum cudaMemoryType type, T *data){
  * \param[in]      exclude The exclusive end of random numbers
  * \param[in]      range   The range of random numbers, it does not have to be positive, it is calculated with `include - exclude`
  * \param[in]      ndata   Number of data
+ * \tparam         T       We do not really need it here, just to make the function templated so that I can put it into a header file without complain
  *
  */
-__global__ void cudautil_contraintor(float *data, float exclude, float range, int ndata);
+template<typename T>
+__global__ void cudautil_contraintor(T *data, T exclude, T range, int ndata){
+  // Maximum x-dimension of a grid of thread blocks is 2^31-1
+  // Maximum x- or y-dimension of a block is 1024
+  // So here we can cover (2^31-1)*1024 random numbers, which are 2^41-1024
+  // should be big enough
+
+  int idx = blockDim.x*blockIdx.x + threadIdx.x;
+  if(idx<ndata){
+    // Just in case we have a very small ndata
+    data[idx] = data[idx]*range+exclude;
+  }
+}
+//__global__ void cudautil_contraintor(float *data, float exclude, float range, int ndata);
 
 /*! \brief A class to generate uniform distributed \p ndata random float data on device 
  *
@@ -195,7 +246,7 @@ class RealDataGeneratorUniform{
     // Setup kernel size and run it to convert to a given range
     nblock = ndata/nthread;
     nblock = (nblock>1)?nblock:1;
-    cudautil_contraintor<<<nblock, nthread>>>(data, exclude, range, ndata);
+    cudautil_contraintor<float><<<nblock, nthread>>>(data, exclude, range, ndata);
 
     checkCudaErrors(cudaDeviceSynchronize());
   }
@@ -1265,11 +1316,21 @@ __global__ void cudautil_histogram(const T *in, int ndata, float min, float max,
   
   the kernel size here should be the same as previous gridDim.x size or larger
   
+  \tparam T It is not necessary here but I need it to make the function templated.
   \see cudautil_histogram
 */
-
-__global__ void cudautil_histogram_final(const unsigned int *in, int n, unsigned int *out);
-
+template <typename T>
+__global__ void cudautil_histogram_final(const T *in, int n, unsigned int *out)
+{
+  // gridDim.x and blockDim.x should be enough to cover al bin index
+  int i = blockIdx.x * blockDim.x + threadIdx.x;
+  if (i < NUM_BINS) {
+    T total = 0;
+    for (int j = 0; j < n; j++) 
+      total += in[i + NUM_BINS * j];
+    out[i] = total;
+  }
+}
 
 /*! \brief A class to get histogram of \p ndata input data with a data type \tparam T
  *
@@ -1299,7 +1360,7 @@ class RealDataHistogram{
     
     cudautil_histogram<<<grid_smem, nthread>>>(input, ndata, min, max, result);
     getLastCudaError("Kernel execution failed [ cudautil_histogram ]");
-    cudautil_histogram_final<<<grid_final, nthread>>>(result, nblock, data);
+    cudautil_histogram_final<unsigned int ><<<grid_final, nthread>>>(result, nblock, data);
     getLastCudaError("Kernel execution failed [ cudautil_histogram_final ]");
 
     // free intermediate data

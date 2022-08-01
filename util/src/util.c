@@ -23,4 +23,4 @@ int seconds2dhms(uint64_t seconds, char *dhms){
   return EXIT_SUCCESS;
 }
 
-bool isPow2(unsigned int x) { return ((x & (x - 1)) == 0); }
+//bool isPow2(unsigned int x) { return ((x & (x - 1)) == 0); }

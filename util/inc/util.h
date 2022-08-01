@@ -12,7 +12,6 @@
 extern "C" {
 #endif
   
-  bool isPow2(unsigned int x);
   int seconds2dhms(uint64_t seconds, char *dhms);
 
   // The following copied from https://stackoverflow.com/questions/41390824/%C2%B5s-precision-wait-in-c-for-linux-that-does-not-put-program-to-sleep
