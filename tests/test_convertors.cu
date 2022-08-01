@@ -2,9 +2,8 @@
 #define _GNU_SOURCE
 #endif
 
-#include "util.h"
-#include "util.hpp"
-#include "util.cuh"
+#include "test_utilities.h"
+#include "cuda_test_utilities.h"
 
 #include "cpgplot.h"
 
@@ -17,7 +16,7 @@ using namespace std;
 
 // We can not compare converted numbers against CPU implementation
 // We can only check the difference between original data and converted data with mean and standard deviation
-TEST_CASE("RealDataConvertorFloat2Float") {
+TEST_CASE("RealConvertorFloat2Float") {
 
   int ndata = 102400000;
   float mean = 0;
@@ -35,17 +34,17 @@ TEST_CASE("RealDataConvertorFloat2Float") {
   curandGenerator_t gen;
   checkCudaErrors(curandCreateGenerator(&gen, CURAND_RNG_PSEUDO_DEFAULT));
   checkCudaErrors(curandSetPseudoRandomGeneratorSeed(gen, time(NULL)));
-  RealDataGeneratorNormal normal_data(gen, mean, stddev, ndata);
+  RealGeneratorNormal normal_data(gen, mean, stddev, ndata);
   print_cuda_memory_info();
 
   // Convert to float
-  RealDataConvertor<float, float> normal_data_float(normal_data.data, ndata, nthread);
+  RealConvertor<float, float> normal_data_float(normal_data.data, ndata, nthread);
 
   // Get the difference
-  RealDataDifferentiator<float, float> normal_data_diff(normal_data.data, normal_data_float.data, ndata, nthread);
+  RealDifferentiator<float, float> normal_data_diff(normal_data.data, normal_data_float.data, ndata, nthread);
   
   // Get mean and standard deviation
-  RealDataMeanStddevCalculator<float> mean_stddev(normal_data_diff.data, ndata, nthread, 7);
+  RealMeanStddevCalculator<float> mean_stddev(normal_data_diff.data, ndata, nthread, 7);
   
   CUDA_STOPTIME(g);
   cout << "elapsed time is " << gtime << " milliseconds" << endl;
@@ -61,7 +60,7 @@ TEST_CASE("RealDataConvertorFloat2Float") {
   REQUIRE(stddev_f == 0);
 }
 
-TEST_CASE("RealDataConvertorFloat2Half") {
+TEST_CASE("RealConvertorFloat2Half") {
 
   int ndata = 102400000;
   float mean = 0;
@@ -79,17 +78,17 @@ TEST_CASE("RealDataConvertorFloat2Half") {
   curandGenerator_t gen;
   checkCudaErrors(curandCreateGenerator(&gen, CURAND_RNG_PSEUDO_DEFAULT));
   checkCudaErrors(curandSetPseudoRandomGeneratorSeed(gen, time(NULL)));
-  RealDataGeneratorNormal normal_data(gen, mean, stddev, ndata);
+  RealGeneratorNormal normal_data(gen, mean, stddev, ndata);
   print_cuda_memory_info();
 
   // Convert to half
-  RealDataConvertor<float, half> normal_data_half(normal_data.data, ndata, nthread);
+  RealConvertor<float, half> normal_data_half(normal_data.data, ndata, nthread);
 
   // Get the difference
-  RealDataDifferentiator<float, half> normal_data_diff(normal_data.data, normal_data_half.data, ndata, nthread);
+  RealDifferentiator<float, half> normal_data_diff(normal_data.data, normal_data_half.data, ndata, nthread);
   
   // Get mean and standard deviation
-  RealDataMeanStddevCalculator<float> mean_stddev(normal_data_diff.data, ndata, nthread, 7);
+  RealMeanStddevCalculator<float> mean_stddev(normal_data_diff.data, ndata, nthread, 7);
   
   CUDA_STOPTIME(g);
   cout << "elapsed time is " << gtime << " milliseconds" << endl;
@@ -105,7 +104,7 @@ TEST_CASE("RealDataConvertorFloat2Half") {
   //REQUIRE(stddev_f == 0);
 }
 
-TEST_CASE("RealDataConvertorFloat2Int8_T") {
+TEST_CASE("RealConvertorFloat2Int8_T") {
 
   int ndata = 102400000;
   float mean = 0;
@@ -123,17 +122,17 @@ TEST_CASE("RealDataConvertorFloat2Int8_T") {
   curandGenerator_t gen;
   checkCudaErrors(curandCreateGenerator(&gen, CURAND_RNG_PSEUDO_DEFAULT));
   checkCudaErrors(curandSetPseudoRandomGeneratorSeed(gen, time(NULL)));
-  RealDataGeneratorNormal normal_data(gen, mean, stddev, ndata);
+  RealGeneratorNormal normal_data(gen, mean, stddev, ndata);
   print_cuda_memory_info();
 
   // Convert to int8_t
-  RealDataConvertor<float, int8_t> normal_data_int8_t(normal_data.data, ndata, nthread);
+  RealConvertor<float, int8_t> normal_data_int8_t(normal_data.data, ndata, nthread);
 
   // Get the difference
-  RealDataDifferentiator<float, int8_t> normal_data_diff(normal_data.data, normal_data_int8_t.data, ndata, nthread);
+  RealDifferentiator<float, int8_t> normal_data_diff(normal_data.data, normal_data_int8_t.data, ndata, nthread);
   
   // Get mean and standard deviation
-  RealDataMeanStddevCalculator<float> mean_stddev(normal_data_diff.data, ndata, nthread, 7);
+  RealMeanStddevCalculator<float> mean_stddev(normal_data_diff.data, ndata, nthread, 7);
   
   CUDA_STOPTIME(g);
   cout << "elapsed time is " << gtime << " milliseconds" << endl;

@@ -1,3 +1,14 @@
+// real_calculators.h
+//
+// last-edit-by: <> 
+//
+// Description:
+//
+//////////////////////////////////////////////////////////////////////
+
+#ifndef REAL_CALCULATORS_H
+#define REAL_CALCULATORS_H 1
+
 /* Copyright (c) 2022, NVIDIA CORPORATION. All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -30,9 +41,6 @@
 
   This file is https://github.com/NVIDIA/cuda-samples/blob/master/Samples/2_Concepts_and_Techniques/reduction/reduction_kernel.cu, as of 26.07.2022
 */
-
-#ifndef _REDUCE_KERNEL_H_
-#define _REDUCE_KERNEL_H_
 
 #define _CG_ABI_EXPERIMENTAL
 #include <cooperative_groups.h>
@@ -1027,4 +1035,386 @@ void reduce(int size, int threads, int blocks, int whichKernel, T *d_idata,
   }
 }
 
-#endif  // #ifndef _REDUCE_KERNEL_H_
+/*! \brief A function to convert input data from \p T to float and calculate its power in parallel on GPU
+ * 
+ * It is a template function to convert input data from \p T to float and calculate its power in parallel on GPU
+ * \tparam T  The input data type
+ *
+ * The data type convertation is done with an overloadded function `scalar_typecast`
+ * \see scalar_typecast
+ *
+ * The supported data convertation is shown in the following table (we can add more support here later)
+ *
+ * |T      |
+ * |-------|
+ * |double |
+ * |half   |
+ * |int    |
+ * |int16_t|
+ * |int8_t |
+ *
+ * \param[in]  d_data   Input data
+ * \param[in]  ndata    Number of data
+ * \param[out] d_float  Converted data in float
+ * \param[out] d_float2 Power of converted data 
+ *
+ */
+template <typename T>
+__global__ void cudautil_pow(const T *d_data, float *d_float, float *d_float2, int ndata){
+  int idx = blockDim.x*blockIdx.x + threadIdx.x;
+  
+  if(idx < ndata){
+    float f_data;
+
+    scalar_typecast(d_data[idx], f_data);
+    d_float[idx]  = f_data;
+    d_float2[idx] = f_data*f_data;
+  }
+}
+
+template <typename T>
+class RealMeanStddevCalculator {
+  
+ public:
+  float mean;   ///< Mean of the difference between input two vectors, always in float
+  float stddev; ///< Standard deviation of the difference between input two vectors, always in float
+
+  
+  //! Constructor of class RealMeanStddevCalculator
+  /*!
+   * - initialise the class
+   * - create required device memory
+   * - convert input data from \p T to float and calculate its power in a single CUDA kernel `cudautil_pow`
+   * - reduce the float data and its power to get mean
+   * - calculate standard deviation with the mean of float and power data
+   *
+   * \param[in] raw     The input vector on device/host with data type \p T
+   * \param[in] ndata   Number of data
+   * \param[in] nthread Number of threads per CUDA block to run kernel `cudautil_pow`
+   * \param[in] method  Data reduction method, which can be from 0 to 7 inclusive
+   *
+   * As kernel `cudautil_pow` uses `scalar_typecast` to convert \p T to float, the support \p T can be
+   *
+   * |T |
+   * |--|
+   * |double | 
+   * |half   |
+   * |int    | 
+   * |int16_t|
+   * |int8_t |
+   * 
+   * \see cudautil_pow, reduce, scalar_typecast
+   *
+   */
+ RealMeanStddevCalculator(T *raw, int ndata, int nthread, int method)
+   :ndata(ndata), nthread(nthread), method(method){
+
+    /* Sort out input buffers */
+    data = copy2device(raw, ndata, type);
+    
+    // Now do calculation
+    nblock = ndata/nthread;
+    nblock = (nblock>1)?nblock:1;
+    
+    checkCudaErrors(cudaMallocManaged(&d_float,  ndata*sizeof(float), cudaMemAttachGlobal));
+    checkCudaErrors(cudaMallocManaged(&d_float2, ndata*sizeof(float), cudaMemAttachGlobal));
+    
+    checkCudaErrors(cudaMallocManaged(&d_reduction, nblock*sizeof(float), cudaMemAttachGlobal));
+    
+    cudautil_pow<<<nblock, nthread>>>(data, d_float, d_float2, ndata);
+    getLastCudaError("Kernel execution failed [ cudautil_pow ]");
+    
+    // First reduce mean data
+    reduce(ndata,  nthread, nblock, method, d_float, d_reduction);
+    checkCudaErrors(cudaDeviceSynchronize());
+    if(nblock > 1){
+      reduce(nblock, nthread, 1, method, d_reduction, d_float);
+      checkCudaErrors(cudaDeviceSynchronize());
+      mean = d_float[0]/(float)ndata;
+    }else{
+      mean = d_reduction[0]/(float)ndata;
+    }
+    
+    // Second reduce mean power 2 data
+    reduce(ndata,  nthread, nblock, method, d_float2, d_reduction);
+    checkCudaErrors(cudaDeviceSynchronize());
+    if(nblock > 1){
+      reduce(nblock, nthread, 1, method, d_reduction, d_float2);
+      checkCudaErrors(cudaDeviceSynchronize());
+      mean2 = d_float2[0]/(float)ndata;
+    }else{
+      mean2 = d_reduction[0]/(float)ndata;
+    }
+
+    // Got final numbers
+    stddev = sqrtf(mean2 - mean*mean);
+
+    // As we only need stddev and mean
+    // Probably better to free all memory here
+    checkCudaErrors(cudaFree(d_float));
+    checkCudaErrors(cudaFree(d_float2));
+    checkCudaErrors(cudaFree(d_reduction));
+    
+    remove_device_copy(type, data);
+    
+    checkCudaErrors(cudaDeviceSynchronize());
+  }
+  
+  //! Deconstructor of RealMeanStddevCalculator class.
+  /*!
+   * 
+   * - free device memory at the class life end
+   */
+  ~RealMeanStddevCalculator(){
+    checkCudaErrors(cudaDeviceSynchronize());
+  }
+  
+ private:
+  enum cudaMemoryType type; ///< memory type
+
+  int ndata; ///< Number of input data
+  int nthread; ///< Number of threads per CUDA block
+  int nblock;  ///< Number of CUDA blocks
+  int method; ///< data d_reduction method
+  
+  T *data = NULL;
+  float *d_float = NULL;
+  float *d_float2 = NULL;
+
+  float *d_reduction; ///< it holds intermediate float data duration data d_reduction on device
+  
+  float mean2; ///< mean of difference power of 2
+};
+
+template <typename TMIN, typename TSUB, typename TRES>
+__device__ static inline void scalar_subtract(const TMIN minuend, const TSUB subtrahend, TRES &result) {
+  TRES casted_minuend;
+  TRES casted_subtrahend;
+  
+  scalar_typecast(minuend,    casted_minuend);
+  scalar_typecast(subtrahend, casted_subtrahend);
+  
+  result = casted_minuend - casted_subtrahend;
+}
+
+
+/*! \brief Overloadded kernel to get d_difference between two real input vectors
+ *
+ * \tparam T1 Data type of the first input vector
+ * \tparam T2 Data type of the second input vector
+ * 
+ * \param[in]  d_data1 The first input vector in \p T1
+ * \param[in]  d_data2 The second input vector in \p T2
+ * \param[in]  ndata   Number of data
+ * \param[out] d_diff  The d_difference between these two vectors in float, it is always in float
+ *
+ * The kernel uses `scalar_subtract` to get difference (in float) between two numbers and currently it supports (we can add more support later).
+ *
+ * T1     | T2
+ * -------|----
+ * float  | float
+ * float  | half
+ * half   | float 
+ * half   | half 
+ * 
+ * \see scalar_subtract
+ * 
+ */
+template <typename T1, typename T2>
+__global__ void cudautil_subtract(const T1 *d_data1, const T2 *d_data2, float *d_diff, int ndata){
+  int idx = blockDim.x*blockIdx.x + threadIdx.x;
+
+  if(idx < ndata){
+    //d_diff[idx] = d_data1[idx] - d_data2[idx];
+
+    scalar_subtract(d_data1[idx], d_data2[idx], d_diff[idx]);
+  }
+}
+
+/*! \brief A class to get the difference between two real vectors
+ *
+ * \tparam T1 Typename of the data in one vector
+ * \tparam T2 Typename of the data in the other vector
+ *
+ * 
+ * Suggested combinations of T1 and T2 are (other combinations may not work, we can add more support later)
+ * T1     | T2
+ * -------|----
+ * float  | float
+ * float  | half
+ * half   | float 
+ * half   | half  
+ * 
+ * The class to get difference between two real vectors, it is allowed to have different types for these inputs and
+ * the result will be in float.
+ * 
+ */
+template <typename T1, typename T2>
+class RealDifferentiator {
+
+public:
+  float *data  = NULL;  ///< the difference between input \p data1 and \p data2
+  
+  //! Constructor of RealDifferentiator class.
+  /*!
+   * 
+   * - initialise the class
+   * - create device memory for the difference \p diff
+   * - calculate the difference with a CUDA kernel `cudautil_subtract`
+   *
+   * \see cudautil_subtract, scalar_subtract
+   * 
+   * \param[in] raw1 The first input real vector
+   * \param[in] raw2 The second input real vector
+   * \param[in] ndata   Number of data to subtract
+   * \param[in] nthread Number of threads per CUDA block to run `cudautil_subtract`
+   *
+   */
+  RealDifferentiator(T1 *raw1, T2 *raw2, int ndata, int nthread)
+    :ndata(ndata), nthread(nthread){
+
+    // sort out input buffers
+    data1 = copy2device(raw1, ndata, type1);
+    data2 = copy2device(raw2, ndata, type2);
+
+    // Create output buffer as managed
+    checkCudaErrors(cudaMallocManaged(&data, ndata*sizeof(float), cudaMemAttachGlobal));
+    
+    // setup kernel size and run it to get difference
+    nblock = ndata/nthread;
+    nblock = (nblock>1)?nblock:1;
+    cudautil_subtract<<<nblock, nthread>>>(data1, data2, data, ndata);
+    getLastCudaError("Kernel execution failed [ cudautil_subtract ]");
+
+    // Free intermediate memory
+    remove_device_copy(type1, data1);
+    remove_device_copy(type2, data2);
+    
+    checkCudaErrors(cudaDeviceSynchronize());
+  }
+  
+  //! Deconstructor of RealDifferentiator class.
+  /*!
+   * 
+   * - free device memory at the class life end
+   */
+  ~RealDifferentiator(){
+    checkCudaErrors(cudaFree(data));
+    checkCudaErrors(cudaDeviceSynchronize());
+  }
+  
+private:
+  enum cudaMemoryType type1; ///< memory type
+  enum cudaMemoryType type2; ///< memory type
+
+  int ndata; ///< Number of input data
+  int nthread; ///< Number of threads per CUDA block
+  int nblock;  ///< Number of CUDA blocks
+
+  T1 *data1 = NULL; ///< private variable to hold input vector pointer 1
+  T2 *data2 = NULL; ///< private variable to hold input vector pointer 2
+};
+
+
+//! A template kernel to calculate phase and amplitude of input array 
+/*!
+ * 
+ * \see scalar_typecast
+ *
+ * \tparam T Complex number component data type
+ * 
+ * \param[in]  v         input Complex data
+ * \param[in]  ndata     Number of data samples to be calculated
+ * \param[out] amplitude Calculated amplitude
+ * \param[out] phase     Calculated amplitude
+ *
+ */
+template <typename T>
+__global__ void cudautil_amplitude_phase(const T *v, float *amplitude, float *phase, int ndata){
+  int idx = blockDim.x*blockIdx.x + threadIdx.x;
+  
+  if(idx < ndata){
+    // We always do calculation in float
+    float v1;
+    float v2;
+    
+    scalar_typecast(v[idx].x, v1);
+    scalar_typecast(v[idx].y, v2);
+    
+    amplitude[idx] = sqrtf(v1*v1+v2*v2);
+    phase[idx]     = atan2f(v2, v1); // in radians
+  }
+}
+
+template <typename T>
+class AmplitudePhaseCalculator{
+ public:
+  float *amp = NULL;///< Calculated amplitude on device
+  float *pha = NULL;///< Calculated phase on device
+  
+  //! Constructor of AmplitudePhaseCalculator class.
+  /*!
+   * 
+   * - initialise the class
+   * - create device memory for amplitude and phase
+   * - calculate phase and amplitude with CUDA
+   *
+   * \see cudautil_amplitude_phase
+   *
+   * \tparam TIN Input data type
+   * 
+   * \param[in] raw  input Complex data
+   * \param[in] ndata   Number of samples to be converted, the size of data is 2*ndata
+   * \param[in] nthread Number of threads per CUDA block to run `cudautil_amplitude_phase` kernel
+   *
+   */
+ AmplitudePhaseCalculator(T *raw,
+			  int ndata,
+			  int nthread
+			  )
+   :ndata(ndata), nthread(nthread){
+
+    // sourt out input data
+    data = copy2device(raw, ndata, type);
+    
+    // Get output buffer as managed
+    checkCudaErrors(cudaMallocManaged(&amp, ndata * sizeof(float), cudaMemAttachGlobal));
+    checkCudaErrors(cudaMallocManaged(&pha, ndata * sizeof(float), cudaMemAttachGlobal));
+  
+    // Get amplitude and phase
+    nblock = ndata/nthread;
+    nblock = (nblock>1)?nblock:1;
+    cudautil_amplitude_phase<<<nblock, nthread>>>(data, amp, pha, ndata);
+
+    remove_device_copy(type, data);
+    
+    checkCudaErrors(cudaDeviceSynchronize());
+  }
+  
+  //! Deconstructor of RealGeneratorNormal class.
+  /*!
+   * 
+   * - free device memory at the class life end
+   */
+  ~AmplitudePhaseCalculator(){
+    
+    checkCudaErrors(cudaFree(amp));
+    checkCudaErrors(cudaFree(pha));
+
+    checkCudaErrors(cudaDeviceSynchronize());
+  }
+
+ private:
+  int ndata; ///< number of values as a private parameter
+  int nblock; ///< Number of CUDA blocks
+  int nthread; ///< number of threas per block
+  
+  enum cudaMemoryType type; ///< memory type
+  
+  T *data; ///< To get hold on the input data
+};
+
+#endif // REAL_CALCULATORS_H
+//////////////////////////////////////////////////////////////////////
+// $Log:$
+//

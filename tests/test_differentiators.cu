@@ -33,7 +33,7 @@ int calculate_mean_stddev(float *data, int ndata, float &mean, float &stddev){
 
 // Here we only check float data type, do we need to check other types?
 // We probably should check data type cast directly for other types
-TEST_CASE("RealDataDifferentiator") {
+TEST_CASE("RealDifferentiator") {
   
   int ndata = 102400000;
   float mean = 10;
@@ -52,15 +52,15 @@ TEST_CASE("RealDataDifferentiator") {
   curandGenerator_t gen;
   checkCudaErrors(curandCreateGenerator(&gen, CURAND_RNG_PSEUDO_DEFAULT));
   checkCudaErrors(curandSetPseudoRandomGeneratorSeed(gen, time(NULL)));
-  RealDataGeneratorNormal normal_data1(gen, mean, stddev, ndata);
-  RealDataGeneratorNormal normal_data2(gen, mean, stddev, ndata);
+  RealGeneratorNormal normal_data1(gen, mean, stddev, ndata);
+  RealGeneratorNormal normal_data2(gen, mean, stddev, ndata);
   print_cuda_memory_info();
 
   // get difference with CUDA code
-  RealDataDifferentiator<float, float> diff_g(normal_data1.data, normal_data2.data, ndata, nthread);
+  RealDifferentiator<float, float> diff_g(normal_data1.data, normal_data2.data, ndata, nthread);
 
   // Get mean and stddev with CUDA code
-  RealDataMeanStddevCalculator<float> mean_stddev_g(diff_g.data, ndata, nthread, 7);
+  RealMeanStddevCalculator<float> mean_stddev_g(diff_g.data, ndata, nthread, 7);
 
   CUDA_STOPTIME(g);
   cout << "elapsed time with GPU is " << gtime << " milliseconds" << endl;
@@ -81,7 +81,7 @@ TEST_CASE("RealDataDifferentiator") {
 
   // Get mean and stddev with CUDA code
   // I only care about difference, so I use cuda mean and standard deviation calculator
-  RealDataMeanStddevCalculator<float> mean_stddev_c(diff_c.data, ndata, nthread, 7);
+  RealMeanStddevCalculator<float> mean_stddev_c(diff_c.data, ndata, nthread, 7);
 
   chrono::steady_clock::time_point end = chrono::steady_clock::now();
   cout << "elapsed time with CPU is " << chrono::duration_cast<chrono::milliseconds>(end - begin).count() << " milliseconds" << endl;

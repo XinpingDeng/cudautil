@@ -37,7 +37,7 @@ int calculate_mean_stddev(float *data, int ndata, float &mean, float &stddev){
 
 // Here we only check float data type, do we need to check other types?
 // We probably should check data type cast directly for other types
-TEST_CASE("RealDataMeanStddevCalculator") {
+TEST_CASE("RealMeanStddevCalculator") {
   
   int ndata = 102400000;
   float mean = 10;
@@ -56,11 +56,11 @@ TEST_CASE("RealDataMeanStddevCalculator") {
   curandGenerator_t gen;
   checkCudaErrors(curandCreateGenerator(&gen, CURAND_RNG_PSEUDO_DEFAULT));
   checkCudaErrors(curandSetPseudoRandomGeneratorSeed(gen, time(NULL)));
-  RealDataGeneratorNormal normal_data(gen, mean, stddev, ndata);
+  RealGeneratorNormal normal_data(gen, mean, stddev, ndata);
   print_cuda_memory_info();
 
   // get mean and stddev with CUDA code
-  RealDataMeanStddevCalculator<float> mean_stddev(normal_data.data, ndata, nthread, 7);
+  RealMeanStddevCalculator<float> mean_stddev(normal_data.data, ndata, nthread, 7);
   
   CUDA_STOPTIME(g);
   cout << "elapsed time with GPU is " << gtime << " milliseconds" << endl;

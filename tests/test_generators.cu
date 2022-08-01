@@ -8,6 +8,8 @@
 
 #include "cpgplot.h"
 
+#include "helper_cuda.h"
+
 #define DOCTEST_CONFIG_IMPLEMENT_WITH_MAIN
 #include "doctest.h"
 
@@ -82,7 +84,7 @@ int plotit(unsigned *data, float min, float max, char *device, char *title){
   return EXIT_SUCCESS;
 }
 
-TEST_CASE("RealDataGeneratorUniform") {
+TEST_CASE("RealGeneratorUniform") {
 
   int nthread = 128;
   int ndata = 102400000;
@@ -100,11 +102,11 @@ TEST_CASE("RealDataGeneratorUniform") {
   curandGenerator_t gen;
   checkCudaErrors(curandCreateGenerator(&gen, CURAND_RNG_PSEUDO_DEFAULT));
   checkCudaErrors(curandSetPseudoRandomGeneratorSeed(gen, time(NULL)));
-  RealDataGeneratorUniform uniform_data(gen, ndata, exclude, include, nthread);
+  RealGeneratorUniform uniform_data(gen, ndata, exclude, include, nthread);
   print_cuda_memory_info();
 
   // Get mean and standard deviation
-  RealDataMeanStddevCalculator<float> mean_stddev(uniform_data.data, ndata, nthread, 7);
+  RealMeanStddevCalculator<float> mean_stddev(uniform_data.data, ndata, nthread, 7);
   cout << "uniform data mean is " << mean_stddev.mean << "\t"
        << "uniform data stddev is " << mean_stddev.stddev 
        << endl;
@@ -113,7 +115,7 @@ TEST_CASE("RealDataGeneratorUniform") {
   float min = exclude;
   float max = include;
   int nblock = 256;
-  RealDataHistogram<float> histogram(uniform_data.data, ndata, min, max, nblock, nthread);
+  RealHistogram<float> histogram(uniform_data.data, ndata, min, max, nblock, nthread);
 
   CUDA_STOPTIME(g);
   cout << "elapsed time is " << gtime << " milliseconds" << endl;
@@ -126,7 +128,7 @@ TEST_CASE("RealDataGeneratorUniform") {
   plotit(histogram.data, min, max, device, title);
 }    
 
-TEST_CASE("RealDataGeneratorNormal") {
+TEST_CASE("RealGeneratorNormal") {
 
   int ndata = 102400000;
   float mean = 0;
@@ -144,11 +146,11 @@ TEST_CASE("RealDataGeneratorNormal") {
   curandGenerator_t gen;
   checkCudaErrors(curandCreateGenerator(&gen, CURAND_RNG_PSEUDO_DEFAULT));
   checkCudaErrors(curandSetPseudoRandomGeneratorSeed(gen, time(NULL)));
-  RealDataGeneratorNormal normal_data(gen, mean, stddev, ndata);
+  RealGeneratorNormal normal_data(gen, mean, stddev, ndata);
   print_cuda_memory_info();
 
   // Get mean and standard deviation
-  RealDataMeanStddevCalculator<float> mean_stddev(normal_data.data, ndata, nthread, 7);
+  RealMeanStddevCalculator<float> mean_stddev(normal_data.data, ndata, nthread, 7);
   cout << "normal data mean is " << mean_stddev.mean << "\t"
        << "normal data stddev is " << mean_stddev.stddev 
        << endl;
@@ -157,7 +159,7 @@ TEST_CASE("RealDataGeneratorNormal") {
   float min = -50;
   float max = 50;
   int nblock = 256;
-  RealDataHistogram<float> histogram(normal_data.data, ndata, min, max, nblock, nthread);
+  RealHistogram<float> histogram(normal_data.data, ndata, min, max, nblock, nthread);
 
   CUDA_STOPTIME(g);
   cout << "elapsed time is " << gtime << " milliseconds" << endl;
