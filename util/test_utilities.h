@@ -5,10 +5,12 @@
 // Description:
 //
 //////////////////////////////////////////////////////////////////////
-#pragma once
 
 #ifndef TEST_UTILITIES_H
 #define TEST_UTILITIES_H 1
+
+#pragma once
+
 
 #define __STDC_FORMAT_MACROS
 
@@ -39,7 +41,6 @@ extern "C" {
   
     return EXIT_SUCCESS;
   }
-  //int seconds2dhms(uint64_t seconds, char *dhms);
 
   // The following copied from https://stackoverflow.com/questions/41390824/%C2%B5s-precision-wait-in-c-for-linux-that-does-not-put-program-to-sleep
 # define tscmp(a, b, CMP)			\
@@ -69,7 +70,6 @@ extern "C" {
 #ifdef __cplusplus
 }
 #endif
-
 
 
 
