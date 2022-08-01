@@ -1279,8 +1279,7 @@ public:
     checkCudaErrors(curandGenerateUniform(gen, data, ndata));
 
     // Setup kernel size and run it to convert to a given range
-    nblock = ndata/nthread;
-    nblock = (nblock>1)?nblock:1;
+    nblock = (int)(ndata/(float)nthread+0.5);
     cudautil_contraintor<float><<<nblock, nthread>>>(data, exclude, range, ndata);
 
     checkCudaErrors(cudaDeviceSynchronize());
@@ -1459,8 +1458,7 @@ public:
     checkCudaErrors(cudaMallocManaged(&data, ndata*sizeof(TOUT), cudaMemAttachGlobal));
 
     // Setup kernel size and run it to convert data
-    nblock = ndata/nthread;
-    nblock = (nblock>1)?nblock:1;    
+    nblock = (int)(ndata/(float)nthread+0.5);
     cudautil_convert<<<nblock, nthread>>>(input, data, ndata);
     getLastCudaError("Kernel execution failed [ cudautil_convert ]");
 
@@ -1567,8 +1565,7 @@ public:
     data = copy2device(raw, ndata, type);
     
     // Now do calculation
-    nblock = ndata/nthread;
-    nblock = (nblock>1)?nblock:1;
+    nblock = (int)(ndata/(float)nthread+0.5);
     
     checkCudaErrors(cudaMallocManaged(&d_float,  ndata*sizeof(float), cudaMemAttachGlobal));
     checkCudaErrors(cudaMallocManaged(&d_float2, ndata*sizeof(float), cudaMemAttachGlobal));
@@ -1724,8 +1721,7 @@ public:
     checkCudaErrors(cudaMallocManaged(&data, ndata*sizeof(float), cudaMemAttachGlobal));
     
     // setup kernel size and run it to get difference
-    nblock = ndata/nthread;
-    nblock = (nblock>1)?nblock:1;
+    nblock = (int)(ndata/(float)nthread+0.5);
     cudautil_subtract<<<nblock, nthread>>>(data1, data2, data, ndata);
     getLastCudaError("Kernel execution failed [ cudautil_subtract ]");
 
@@ -1846,10 +1842,8 @@ public:
     // Create output buffer
     checkCudaErrors(cudaMallocManaged(&data, ndata*sizeof(TCMPX), cudaMemAttachGlobal));
 
-    // Setup kernel size and run it 
-    nblock = ndata/nthread;
-    nblock = (nblock>1)?nblock:1;
-    
+    // Setup kernel size and run it
+    nblock = (int)(ndata/(float)nthread+0.5);
     cudautil_complexbuilder<<<nblock, nthread>>>(data_real, data_imag, data, ndata);
     getLastCudaError("Kernel execution failed [ cudautil_complexbuilder ]");
 
@@ -1972,8 +1966,7 @@ public:
     checkCudaErrors(cudaMallocManaged(&imag, ndata*sizeof(TIMAG), cudaMemAttachGlobal));
 
     // Setup kernel and run it 
-    nblock = ndata/nthread;
-    nblock = (nblock>1)?nblock:1;
+    nblock = (int)(ndata/(float)nthread+0.5);
     
     cudautil_complexsplitter<<<nblock, nthread>>>(data, real, imag, ndata);
     getLastCudaError("Kernel execution failed [ cudautil_complexsplitter ]");
@@ -2071,8 +2064,7 @@ public:
     checkCudaErrors(cudaMallocManaged(&pha, ndata * sizeof(float), cudaMemAttachGlobal));
   
     // Get amplitude and phase
-    nblock = ndata/nthread;
-    nblock = (nblock>1)?nblock:1;
+    nblock = (int)(ndata/(float)nthread+0.5);
     cudautil_amplitude_phase<<<nblock, nthread>>>(data, amp, pha, ndata);
 
     remove_device_copy(type, data);
