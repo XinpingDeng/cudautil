@@ -1,4 +1,4 @@
-// cuda_test_utilities.h
+// cuda_utilities.h
 //
 // last-edit-by: <> 
 //
@@ -6,8 +6,8 @@
 //
 //////////////////////////////////////////////////////////////////////
 
-#ifndef CUDA_TEST_UTILITIES_H
-#define CUDA_TEST_UTILITIES_H 1
+#ifndef CUDA_UTILITIES_H
+#define CUDA_UTILITIES_H 1
 
 #pragma once
 
@@ -2426,7 +2426,7 @@ private:
   unsigned *result; ///< it is not the final result
 };
 
-#endif // CUDA_TEST_UTILITIES_H
+#endif // CUDA_UTILITIES_H
 //////////////////////////////////////////////////////////////////////
 // $Log:$
 //

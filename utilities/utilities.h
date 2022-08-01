@@ -1,4 +1,4 @@
-// test_utilities.h
+// utilities.h
 //
 // last-edit-by: <> 
 //
@@ -6,8 +6,8 @@
 //
 //////////////////////////////////////////////////////////////////////
 
-#ifndef TEST_UTILITIES_H
-#define TEST_UTILITIES_H 1
+#ifndef UTILITIES_H
+#define UTILITIES_H 1
 
 #pragma once
 
@@ -73,7 +73,7 @@ extern "C" {
 
 
 
-#endif // TEST_UTILITIES_H
+#endif // UTILITIES_H
 //////////////////////////////////////////////////////////////////////
 // $Log:$
 //
