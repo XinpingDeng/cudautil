@@ -2,9 +2,8 @@
 #define _GNU_SOURCE
 #endif
 
-#include "util.h"
-#include "util.hpp"
-#include "util.cuh"
+#include "test_utilities.h"
+#include "cuda_test_utilities.h"
 
 #include "cpgplot.h"
 
