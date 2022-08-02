@@ -39,10 +39,10 @@ int calculate_mean_stddev(float *data, int ndata, float &mean, float &stddev){
 TEST_CASE("RealMeanStddevCalculator") {
   
   int ndata = 102400000;
-  float mean = 10;
-  float stddev = 10;
+  float mean = 10000;
+  float stddev = 1000;
   int nthread = 128;
-  float epsilon = 1.0E-6;
+  float epsilon = 1.0E-4;
   
   cudaEvent_t g_start;
   cudaEvent_t g_stop;
