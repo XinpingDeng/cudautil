@@ -5,7 +5,7 @@ project(tests LANGUAGES CUDA CXX C)
 include(CheckLanguage)
 check_language(CUDA)
 
-set(INCLUDE_CURRENT ../utilities)
+set(INCLUDE_CURRENT ../utils)
 set(INCLUDE_UTILS $ENV{UTILS_ROOT}/include)
 
 add_executable(test_operators test_operators.cu)
