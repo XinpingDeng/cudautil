@@ -3,7 +3,7 @@
 
 #pragma once
 
-#include "sharedutilities.h"
+#include "sharedutils.h"
 
 /*! \brief A class to copy device data to host
  *

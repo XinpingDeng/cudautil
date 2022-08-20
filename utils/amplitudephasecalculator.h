@@ -3,7 +3,7 @@
 
 #pragma once
 
-#include "sharedutilities.h"
+#include "sharedutils.h"
 //! A template kernel to calculate phase and amplitude of input array 
 /*!
  * 

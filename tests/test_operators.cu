@@ -2,7 +2,7 @@
 #define _GNU_SOURCE
 #endif
 
-#include "cuda_utilities.h"
+#include "cuda_utils.h"
 
 #define DOCTEST_CONFIG_IMPLEMENT_WITH_MAIN
 #include "doctest/doctest.h"

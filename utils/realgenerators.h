@@ -3,7 +3,7 @@
 
 #pragma once
 
-#include "sharedutilities.h"
+#include "sharedutils.h"
 
 
 /*! A kernel to contraint random number from range (0.0 1.0] to range (exclude include] or [include exclude).

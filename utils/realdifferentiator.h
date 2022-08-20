@@ -3,7 +3,7 @@
 
 #pragma once
 
-#include "sharedutilities.h"
+#include "sharedutils.h"
 
 /*! \brief Overloadded kernel to get d_difference between two real input vectors
  *

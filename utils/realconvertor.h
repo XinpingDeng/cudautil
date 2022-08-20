@@ -3,7 +3,7 @@
 
 #pragma once
 
-#include "sharedutilities.h"
+#include "sharedutils.h"
 
 /*! \brief A function to convert real data from \p TIN to \p TOUT on GPU
  * 

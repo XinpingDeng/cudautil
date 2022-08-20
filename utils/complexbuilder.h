@@ -3,7 +3,7 @@
 
 #pragma once
 
-#include "sharedutilities.h"
+#include "sharedutils.h"
 
 //! A template kernel to build complex numbers with its real and imag part
 /*!

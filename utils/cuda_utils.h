@@ -1,4 +1,4 @@
-// cuda_utilities.h
+// cuda_utils.h
 //
 // last-edit-by: <> 
 //
@@ -11,10 +11,10 @@
 
 #pragma once
 
-#include "sharedutilities.h"
-#include "cuda_real_utilities.h"
-#include "cuda_complex_utilities.h"
-#include "cuda_memory_utilities.h"
+#include "sharedutils.h"
+#include "cuda_real_utils.h"
+#include "cuda_complex_utils.h"
+#include "cuda_memory_utils.h"
 
 #endif // CUDA_UTILITIES_H
 //////////////////////////////////////////////////////////////////////

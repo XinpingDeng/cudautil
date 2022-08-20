@@ -3,7 +3,7 @@
 
 #pragma once
 
-#include "sharedutilities.h"
+#include "sharedutils.h"
 
 /*! \brief A function to convert input data from \p T to float and calculate its power in parallel on GPU
  * 

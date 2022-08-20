@@ -1,4 +1,4 @@
-// cuda_utilities.h
+// cuda_utils.h
 //
 // last-edit-by: <> 
 //
