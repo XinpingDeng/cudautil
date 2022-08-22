@@ -60,6 +60,36 @@ dada_hdu_t* dada_setup_hdu(key_t key, int read, multilog_t* log){
   return hdu;
 }
 
+int dada_remove_hdu(dada_hdu_t *hdu, int read){
+  key_t key = hdu->data_block_key;
+  
+  if(read){
+    if(dada_hdu_unlock_read(hdu)<0){
+      fprintf(stderr, "Error unlocking input HDU with key %x, \n"
+	      "which happens at \"%s\", line [%d], has to abort.\n",
+	      key, __FILE__, __LINE__);
+      
+      exit(EXIT_FAILURE);
+    }
+    fprintf(stdout, "We have input HDU with key %x unlocked\n", key);    
+  }
+  else{
+    if(dada_hdu_unlock_write(hdu)<0){
+      fprintf(stderr, "Error unlocking output HDU with key %x, \n"
+	      "which happens at \"%s\", line [%d], has to abort.\n",
+	      key, __FILE__, __LINE__);
+      
+      exit(EXIT_FAILURE);
+    }
+    fprintf(stdout, "We have output HDU with key %x unlocked\n", key);    
+  }
+
+  dada_hdu_destroy(hdu);
+  fprintf(stdout, "We have HDU with key %x destroyed\n", key);    
+
+  return EXIT_SUCCESS;
+}
+
 ipcbuf_t *dada_get_data_block(dada_hdu_t *hdu){
 
   key_t key=hdu->data_block_key;
@@ -67,9 +97,9 @@ ipcbuf_t *dada_get_data_block(dada_hdu_t *hdu){
   ipcbuf_t *data_block = (ipcbuf_t *)(hdu->data_block);
   
   if(data_block == NULL){
-      fprintf(stderr, "Error getting data block from HDU with key %x, \n"
-	      "which happens at \"%s\", line [%d], has to abort.\n",
-	      key, __FILE__, __LINE__);
+    fprintf(stderr, "Error getting data block from HDU with key %x, \n"
+	    "which happens at \"%s\", line [%d], has to abort.\n",
+	    key, __FILE__, __LINE__);
     
     exit(EXIT_FAILURE);
   }
@@ -86,9 +116,9 @@ ipcbuf_t *dada_get_header_block(dada_hdu_t *hdu){
   ipcbuf_t *header_block = (ipcbuf_t *)(hdu->header_block);
   
   if(header_block == NULL){
-      fprintf(stderr, "Error getting header block from HDU with key %x, \n"
-	      "which happens at \"%s\", line [%d], has to abort.\n",
-	      key, __FILE__, __LINE__);
+    fprintf(stderr, "Error getting header block from HDU with key %x, \n"
+	    "which happens at \"%s\", line [%d], has to abort.\n",
+	    key, __FILE__, __LINE__);
     
     exit(EXIT_FAILURE);
   }
