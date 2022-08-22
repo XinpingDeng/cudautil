@@ -20,7 +20,7 @@ int main(int argc, char *argv[]) {
   char dada_header_buffer[DADA_DEFAULT_HEADER_SIZE];
   char dada_header_filename[DADA_STRLEN] = {"0"};
 
-  strcpy(dada_header_filename, "../dada.header");
+  strcpy(dada_header_filename, "../../tests/dada.header");
   
   if(fileread(dada_header_filename, dada_header_buffer, DADA_DEFAULT_HEADER_SIZE) < 0){
     fprintf(stderr, "TEST_GENERATED_CODE_ERROR:\tError reading DADA header file, "
