@@ -24,12 +24,12 @@ int dada_verify_block_size(int nbytes_expected, ipcbuf_t *block){
   return EXIT_SUCCESS;
 }
 
-dada_hdu_t* dada_setup_hdu(key_t key, int read, multilog_t* log){
+dada_hdu_t* dada_setup_hdu(key_t key, int read, int dbregister, multilog_t* log){
 
   dada_hdu_t *hdu = dada_hdu_create(log);
   dada_hdu_set_key(hdu, key);
   if(dada_hdu_connect(hdu) < 0){ 
-    fprintf(stderr, "Can not connect to input hdu with key %x, "
+    fprintf(stderr, "Can not connect to hdu with key %x, "
 	    "which happens at \"%s\", line [%d], has to abort.\n",
 	    key, __FILE__, __LINE__);
     
@@ -38,24 +38,35 @@ dada_hdu_t* dada_setup_hdu(key_t key, int read, multilog_t* log){
 
   if(read){    
     if(dada_hdu_lock_read(hdu) < 0) {
-      fprintf(stderr, "Error locking input HDU, \n"
+      fprintf(stderr, "Error locking input HDU with key %x, \n"
 	      "which happens at \"%s\", line [%d], has to abort.\n",
-	      __FILE__, __LINE__);
+	      key, __FILE__, __LINE__);
       
       exit(EXIT_FAILURE);
     }
-    fprintf(stdout, "We have input HDU locked\n");
+    fprintf(stdout, "We have input HDU with key %x locked\n", key);
   }
   else{
     if(dada_hdu_lock_write(hdu) < 0) {
-      fprintf(stderr, "Error locking output HDU, \n"
+      fprintf(stderr, "Error locking output HDU with key %x, \n"
 	      "which happens at \"%s\", line [%d], has to abort.\n",
-	      __FILE__, __LINE__);
+	      key, __FILE__, __LINE__);
       
       exit(EXIT_FAILURE);
     }
-    fprintf(stdout, "We have output HDU locked\n");    
+    fprintf(stdout, "We have output HDU with key %x locked\n", key);    
   }
 
+  if(dbregister){
+    if(dada_cuda_dbregister(hdu) < 0) {
+      fprintf(stderr, "Error lockregistering HDU with key %x, \n"
+	      "which happens at \"%s\", line [%d], has to abort.\n",
+	      key, __FILE__, __LINE__);
+      
+      exit(EXIT_FAILURE);
+    }
+    fprintf(stdout, "We have HDU with key %x registered for CUDA\n", key);    
+  }
+  
   return hdu;
 }
