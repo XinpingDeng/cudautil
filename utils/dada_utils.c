@@ -24,7 +24,7 @@ int dada_verify_block_size(int nbytes_expected, ipcbuf_t *block){
   return EXIT_SUCCESS;
 }
 
-dada_hdu_t* dada_setup_hdu(key_t key, int read, int dbregister, multilog_t* log){
+dada_hdu_t* dada_setup_hdu(key_t key, int read, multilog_t* log){
 
   dada_hdu_t *hdu = dada_hdu_create(log);
   dada_hdu_set_key(hdu, key);
@@ -55,17 +55,6 @@ dada_hdu_t* dada_setup_hdu(key_t key, int read, int dbregister, multilog_t* log)
       exit(EXIT_FAILURE);
     }
     fprintf(stdout, "We have output HDU with key %x locked\n", key);    
-  }
-
-  if(dbregister){
-    if(dada_cuda_dbregister(hdu) < 0) {
-      fprintf(stderr, "Error lockregistering HDU with key %x, \n"
-	      "which happens at \"%s\", line [%d], has to abort.\n",
-	      key, __FILE__, __LINE__);
-      
-      exit(EXIT_FAILURE);
-    }
-    fprintf(stdout, "We have HDU with key %x registered for CUDA\n", key);    
   }
   
   return hdu;
