@@ -19,6 +19,8 @@ extern "C" {
 
   int dada_verify_block_size(int nbytes_expected, ipcbuf_t *dblock);
   dada_hdu_t* dada_setup_hdu(key_t key, int read, multilog_t* log);
+  ipcbuf_t *dada_get_data_block(dada_hdu_t *hdu);
+  ipcbuf_t *dada_get_header_block(dada_hdu_t *hdu);
   
 #ifdef __cplusplus
 }

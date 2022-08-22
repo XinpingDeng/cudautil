@@ -59,3 +59,41 @@ dada_hdu_t* dada_setup_hdu(key_t key, int read, multilog_t* log){
   
   return hdu;
 }
+
+ipcbuf_t *dada_get_data_block(dada_hdu_t *hdu){
+
+  key_t key=hdu->data_block_key;
+  
+  ipcbuf_t *data_block = (ipcbuf_t *)(hdu->data_block);
+  
+  if(data_block == NULL){
+      fprintf(stderr, "Error getting data block from HDU with key %x, \n"
+	      "which happens at \"%s\", line [%d], has to abort.\n",
+	      key, __FILE__, __LINE__);
+    
+    exit(EXIT_FAILURE);
+  }
+
+  fprintf(stdout, "We get data block from HDU with key %x locked\n", key);
+  
+  return data_block;
+}
+
+ipcbuf_t *dada_get_header_block(dada_hdu_t *hdu){
+
+  key_t key=hdu->header_block_key;
+  
+  ipcbuf_t *header_block = (ipcbuf_t *)(hdu->header_block);
+  
+  if(header_block == NULL){
+      fprintf(stderr, "Error getting header block from HDU with key %x, \n"
+	      "which happens at \"%s\", line [%d], has to abort.\n",
+	      key, __FILE__, __LINE__);
+    
+    exit(EXIT_FAILURE);
+  }
+  
+  fprintf(stdout, "We get header block from HDU with key %x locked\n", key);
+
+  return header_block;
+}
