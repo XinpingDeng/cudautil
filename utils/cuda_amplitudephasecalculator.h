@@ -1,9 +1,9 @@
-#ifndef _AMPLITUDEPHASECALCULATOR_H
-#define _AMPLITUDEPHASECALCULATOR_H
+#ifndef _CUDA_AMPLITUDEPHASECALCULATOR_H
+#define _CUDA_AMPLITUDEPHASECALCULATOR_H
 
 #pragma once
 
-#include "sharedutils.h"
+#include "cuda_sharedutils.h"
 //! A template kernel to calculate phase and amplitude of input array 
 /*!
  * 

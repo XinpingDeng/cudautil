@@ -9,8 +9,8 @@
  *
  */
 
-#ifndef _REALREDUCTION_H
-#define _REALREDUCTION_H
+#ifndef _CUDA_REALREDUCTION_H
+#define _CUDA_REALREDUCTION_H
 
 /* Copyright (c) 2022, NVIDIA CORPORATION. All rights reserved.
  *

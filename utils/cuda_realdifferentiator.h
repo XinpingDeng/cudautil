@@ -1,9 +1,9 @@
-#ifndef _REALDIFFERENTIATOR_H
-#define _REALDIFFERENTIATOR_H
+#ifndef _CUDA_REALDIFFERENTIATOR_H
+#define _CUDA_REALDIFFERENTIATOR_H
 
 #pragma once
 
-#include "sharedutils.h"
+#include "cuda_sharedutils.h"
 
 /*! \brief Overloadded kernel to get d_difference between two real input vectors
  *

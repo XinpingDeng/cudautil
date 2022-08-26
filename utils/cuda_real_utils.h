@@ -1,13 +1,13 @@
-#ifndef _CUDA_REAL_UTILITIES_H
-#define _CUDA_REAL_UTILITIES_H
+#ifndef _CUDA_REAL_UTILS_H
+#define _CUDA_REAL_UTILS_H
 
 #pragma once
 
-#include "realconvertor.h"
-#include "realdifferentiator.h"
-#include "realgenerators.h"
-#include "realhistogram.h"
-#include "realreduction.h"
-#include "realstatistic.h"
+#include "cuda_realconvertor.h"
+#include "cuda_realdifferentiator.h"
+#include "cuda_realgenerators.h"
+#include "cuda_realhistogram.h"
+#include "cuda_realreduction.h"
+#include "cuda_realstatistic.h"
 
 #endif

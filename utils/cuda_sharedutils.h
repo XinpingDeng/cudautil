@@ -6,8 +6,8 @@
 //
 //////////////////////////////////////////////////////////////////////
 
-#ifndef _SHAREDUTILITIES_H
-#define _SHAREDUTILITIES_H
+#ifndef _CUDA_SHAREDUTILITIES_H
+#define _CUDA_SHAREDUTILITIES_H
 
 #pragma once
 

@@ -1,9 +1,9 @@
-#ifndef _REALHISTOGRAM_H
-#define _REALHISTOGRAM_H
+#ifndef _CUDA_REALHISTOGRAM_H
+#define _CUDA_REALHISTOGRAM_H
 
 #pragma once
 
-#include "sharedutils.h"
+#include "cuda_sharedutils.h"
 
 #define NUM_BINS 256
 

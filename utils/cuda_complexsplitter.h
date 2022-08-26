@@ -1,9 +1,9 @@
-#ifndef _COMPLEXSPLITTER_H
-#define _COMPLEXSPLITTER_H
+#ifndef _CUDA_COMPLEXSPLITTER_H
+#define _CUDA_COMPLEXSPLITTER_H
 
 #pragma once
 
-#include "sharedutils.h"
+#include "cuda_sharedutils.h"
 
 //! A template kernel to split complex numbers into its real and imag part
 /*!

@@ -3,10 +3,10 @@
 
 #pragma once
 
-#include "devicedataextractor.h"
-#include "devicememoryallocator.h"
-#include "hostdataextractor.h"
-#include "hostmemoryallocator.h"  
-#include "managedmemoryallocator.h"
+#include "cuda_devicedataextractor.h"
+#include "cuda_devicememoryallocator.h"
+#include "cuda_hostdataextractor.h"
+#include "cuda_hostmemoryallocator.h"  
+#include "cuda_managedmemoryallocator.h"
 
 #endif

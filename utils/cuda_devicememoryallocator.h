@@ -1,9 +1,9 @@
-#ifndef _DEVICEMEMORYALLOCATOR_H
-#define _DEVICEMEMORYALLOCATOR_H
+#ifndef _CUDA_DEVICEMEMORYALLOCATOR_H
+#define _CUDA_DEVICEMEMORYALLOCATOR_H
 
 #pragma once
 
-#include "sharedutils.h"
+#include "cuda_sharedutils.h"
 
 /*! \brief A class to allocate memory on device 
  *

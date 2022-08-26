@@ -1,9 +1,9 @@
-#ifndef _HOSTDATAEXTRACTOR_H
-#define _HOSTDATAEXTRACTOR_H
+#ifndef _CUDA_HOSTDATAEXTRACTOR_H
+#define _CUDA_HOSTDATAEXTRACTOR_H
 
 #pragma once
 
-#include "sharedutils.h"
+#include "cuda_sharedutils.h"
 
 /*! \brief A class to copy data from host to device
  *

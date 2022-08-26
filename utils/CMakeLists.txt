@@ -4,7 +4,7 @@ project(libutils LANGUAGES CUDA CXX C)
 
 set(INCLUDE_UTILS $ENV{UTILS_ROOT}/include)
 
-add_library(utils STATIC hdf5_utils.c dada_utils.c dada_cuda_utils.cu) # The performance is much better, default to STATIC
+add_library(utils STATIC hdf5_utils.c dada_utils.c utils.cpp dada_cuda_utils.cu) # The performance is much better, default to STATIC
 
 target_include_directories(utils PRIVATE ${INCLUDE_UTILS})
 

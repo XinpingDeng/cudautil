@@ -1,9 +1,9 @@
-#ifndef _COMPLEXGENERATOR_H
-#define _COMPLEXGENERATOR_H
+#ifndef _CUDA_COMPLEXGENERATOR_H
+#define _CUDA_COMPLEXGENERATOR_H
 
 #pragma once
 
-#include "sharedutils.h"
+#include "cuda_sharedutils.h"
 
 //! A template kernel to build complex numbers with its real and imag part
 /*!

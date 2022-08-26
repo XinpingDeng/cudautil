@@ -1,9 +1,9 @@
-#ifndef _REALCONVERTOR_H
-#define _REALCONVERTOR_H
+#ifndef _CUDA_REALCONVERTOR_H
+#define _CUDA_REALCONVERTOR_H
 
 #pragma once
 
-#include "sharedutils.h"
+#include "cuda_sharedutils.h"
 
 /*! \brief A function to convert real data from \p TIN to \p TOUT on GPU
  * 

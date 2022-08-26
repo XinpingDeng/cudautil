@@ -1,9 +1,9 @@
-#ifndef _REALGENERATOR_H
-#define _REALGENERATOR_H
+#ifndef _CUDA_REALGENERATOR_H
+#define _CUDA_REALGENERATOR_H
 
 #pragma once
 
-#include "sharedutils.h"
+#include "cuda_sharedutils.h"
 
 
 /*! A kernel to contraint random number from range (0.0 1.0] to range (exclude include] or [include exclude).

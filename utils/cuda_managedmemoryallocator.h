@@ -1,9 +1,9 @@
-#ifndef _MANAGEDMEMORYALLOCATOR_H
-#define _MANAGEDMEMORYALLOCATOR_H
+#ifndef _CUDA_MANAGEDMEMORYALLOCATOR_H
+#define _CUDA_MANAGEDMEMORYALLOCATOR_H
 
 #pragma once
 
-#include "sharedutils.h"
+#include "cuda_sharedutils.h"
 
 /*! \brief A class to allocate memory as managed
  *

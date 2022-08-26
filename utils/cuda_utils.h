@@ -6,12 +6,12 @@
 //
 //////////////////////////////////////////////////////////////////////
 
-#ifndef _CUDA_UTILITIES_H
-#define _CUDA_UTILITIES_H
+#ifndef _CUDA_UTILS_H
+#define _CUDA_UTILS_H
 
 #pragma once
 
-#include "sharedutils.h"
+#include "cuda_sharedutils.h"
 #include "cuda_real_utils.h"
 #include "cuda_complex_utils.h"
 #include "cuda_memory_utils.h"

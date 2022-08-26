@@ -1,9 +1,9 @@
-#ifndef _HOSTMEMORYALLOCATOR_H
-#define _HOSTMEMORYALLOCATOR_H
+#ifndef _CUDA_HOSTMEMORYALLOCATOR_H
+#define _CUDA_HOSTMEMORYALLOCATOR_H
 
 #pragma once
 
-#include "sharedutils.h"
+#include "cuda_sharedutils.h"
 
 /*! \brief A class to allocate memory on host 
  *

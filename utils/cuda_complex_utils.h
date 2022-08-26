@@ -3,8 +3,8 @@
 
 #pragma once
 
-#include "complexbuilder.h"
-#include "complexsplitter.h"
-#include "amplitudephasecalculator.h"
+#include "cuda_complexbuilder.h"
+#include "cuda_complexsplitter.h"
+#include "cuda_amplitudephasecalculator.h"
 
 #endif

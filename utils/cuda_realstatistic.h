@@ -1,9 +1,9 @@
-#ifndef _REALSTATISTIC_H
-#define _REALSTATISTIC_H
+#ifndef _CUDA_REALSTATISTIC_H
+#define _CUDA_REALSTATISTIC_H
 
 #pragma once
 
-#include "sharedutils.h"
+#include "cuda_sharedutils.h"
 
 /*! \brief A function to convert input data from \p T to float and calculate its power in parallel on GPU
  * 

@@ -1,5 +1,5 @@
-#ifndef _DADA_UTIL_H
-#define _DADA_UTIL_H
+#ifndef _DADA_UTILS_H
+#define _DADA_UTILS_H
 
 #include <stdlib.h>
 
