@@ -56,6 +56,13 @@ static inline std::ostream& operator<<(std::ostream& os, const cuComplex& data){
   return os;
 }
 
+#include <complex>
+bool approximates(const std::complex<float> &a, const std::complex<float> &b, unsigned nsamples){
+  float absolute = abs(a - b), relative = abs(a / b);
+
+  return (absolute < (.0001 * nsamples)) || (relative > .999 && relative < 1.001);
+}
+
 /*! Overload * operator to multiple a cuComplex with a float for device and host code
  *
  * \param[in] a Input cuComplex number
