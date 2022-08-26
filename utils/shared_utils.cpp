@@ -2,7 +2,7 @@
 #define _GNU_SOURCE
 #endif
 
-#include "utils.h"
+#include "shared_utils.h"
 
 bool approximates(const std::complex<float> &a, const std::complex<float> &b, unsigned nsamples){
   float absolute = abs(a - b), relative = abs(a / b);

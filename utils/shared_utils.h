@@ -1,5 +1,5 @@
-#ifndef _UTILS_H
-#define _UTILS_H
+#ifndef _SHARED_UTILS_H
+#define _SHARED_UTILS_H
 
 #pragma once
 
@@ -7,4 +7,4 @@
 
 bool approximates(const std::complex<float> &a, const std::complex<float> &b, unsigned nsamples);
 
-#endif // UTILS_H
+#endif // SHARED_UTILS_H

@@ -3,7 +3,7 @@
 
 #pragma once
 
-#include "cuda_sharedutils.h"
+#include "cuda_shared_utils.h"
 
 #define NUM_BINS 256
 

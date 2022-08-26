@@ -3,7 +3,7 @@
 
 #pragma once
 
-#include "cuda_sharedutils.h"
+#include "cuda_shared_utils.h"
 
 /*! \brief A function to convert real data from \p TIN to \p TOUT on GPU
  * 

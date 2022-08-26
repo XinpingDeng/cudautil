@@ -3,7 +3,7 @@
 
 #pragma once
 
-#include "cuda_sharedutils.h"
+#include "cuda_shared_utils.h"
 
 //! A template kernel to build complex numbers with its real and imag part
 /*!

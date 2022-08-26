@@ -3,7 +3,7 @@
 
 #pragma once
 
-#include "cuda_sharedutils.h"
+#include "cuda_shared_utils.h"
 
 /*! \brief A function to convert input data from \p T to float and calculate its power in parallel on GPU
  * 

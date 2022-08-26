@@ -3,7 +3,7 @@
 
 #pragma once
 
-#include "cuda_sharedutils.h"
+#include "cuda_shared_utils.h"
 //! A template kernel to calculate phase and amplitude of input array 
 /*!
  * 
