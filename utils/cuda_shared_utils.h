@@ -19,6 +19,8 @@
 #include <cufft.h>
 #include <curand.h>
 #include <curand_kernel.h>
+#include <cublas.h>
+#include <cublas_v2.h>
 
 #include "helper_cuda.h"
 
