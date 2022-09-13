@@ -126,7 +126,7 @@ for key in dada_header:
     )
     source_file.write("  {\n")
     source_file.write(
-        f'    fprintf(stderr, "WRITE_DADA_HEADER_ERROR: Error getting {key}, "\n'
+        f'    fprintf(stderr, "READ_DADA_HEADER_ERROR: Error getting {key}, "\n'
     )
     source_file.write(
         '            "which happens at %s, line [%d].\\n",\n',
@@ -179,7 +179,7 @@ for key in dada_header:
     )
     source_file.write("  {\n")
     source_file.write(
-        f'    fprintf(stderr, "READ_DADA_HEADER_ERROR: Error setting {key}, "\n'
+        f'    fprintf(stderr, "WRITE_DADA_HEADER_ERROR: Error setting {key}, "\n'
     )
     source_file.write(
         '            "which happens at %s, line [%d].\\n",\n',
