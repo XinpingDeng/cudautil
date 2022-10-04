@@ -25,7 +25,6 @@ enum udp_mode      {UNICAST = 0, MULTICAST=1, BROADCAST=2};
 #define UDP_DEFAULT_MODE      UNICAST
 #define UDP_DEFAULT_DIRECTION SEND
 
-int create_udp_socket(char *ip, int port, char *ip_src, int port_src, 
-		      int &sock, int reuse, int window, double tout,
+int create_udp_socket(char *ip, int port, int &sock, int reuse, int window, double tout,
 		      enum udp_mode mode, enum udp_direction direction);
 #endif
