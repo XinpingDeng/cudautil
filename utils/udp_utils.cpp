@@ -120,8 +120,12 @@ int create_udp_socket(char *ip, char *group, int port, int &sock,
   else{
     // Receive ip can be INADDR_ANY
     sa.sin_port   = htons(port);
-    sa.sin_addr.s_addr = inet_addr(ip);
-
+    if(ip == NULL){
+      sa.sin_addr.s_addr = htonl(INADDR_ANY);
+    }
+    else{
+      sa.sin_addr.s_addr = inet_addr(ip);
+    }
     /* receive */
     if (bind(sock, (struct sockaddr *) &sa, sizeof(sa)) < 0) {        
       fprintf(stderr, "CREATE_UDP_SOCKET_ERROR:\tCould not bind to %s_%d, "
@@ -135,7 +139,12 @@ int create_udp_socket(char *ip, char *group, int port, int &sock,
     if(mode == UDP_MULTICAST){
       struct ip_mreq mreq = {0};
       mreq.imr_multiaddr.s_addr = inet_addr(group);
-      mreq.imr_interface.s_addr = inet_addr(ip);
+      if(ip == NULL){
+	mreq.imr_interface.s_addr =  htonl(INADDR_ANY);
+      }
+      else{
+	mreq.imr_interface.s_addr = inet_addr(ip);
+      }
       
       if (setsockopt(sock, IPPROTO_IP, IP_ADD_MEMBERSHIP,
 		     &mreq, sizeof(mreq)) < 0) {
