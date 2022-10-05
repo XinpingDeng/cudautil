@@ -27,7 +27,7 @@ enum udp_mode      {UDP_UNICAST = 0, UDP_MULTICAST=1, UDP_BROADCAST=2};
 
 /*! A function to create udp socket for different mode (unicast, broadcast and multicast) and two directions (send and receive)
   
- * @param[in] ip        IP address, 0.0.0.0 is INADDR_ANY, 255.255.255.255 is INADDR_UDP_BROADCAST
+ * @param[in] ip        IP address, 0.0.0.0 is INADDR_ANY, 255.255.255.255 is INADDR_UDP_BROADCAST, for sender use NULL will not bind socket to a physical interface
  * @param[in] group     multicast group, only be used when mode == UDP_MULTICAST
  * @param[in] port      port number 
  * @param[in] reuse     reuse the interface if it is nonzero

@@ -86,8 +86,6 @@ int create_udp_socket(char *ip, char *group, int port, int &sock,
 
   struct sockaddr_in sa = {0};
   sa.sin_family = AF_INET;
-  sa.sin_port   = htons(port);
-  sa.sin_addr.s_addr = inet_addr(ip);
     
   if(direction == UDP_SEND){    
     // In send direction, UDP_BROADCAST is different from others
@@ -102,17 +100,28 @@ int create_udp_socket(char *ip, char *group, int port, int &sock,
 	return EXIT_FAILURE;
       } // if (setsockopt(sock, SOL_SOCKET, SO_BROADCAST, &broadcast, sizeof(broadcast)))
     } // if(mode == UDP_BROADCAST)
-    
-    if (connect(sock, (struct sockaddr *)&sa, sizeof(sa))){
-      fprintf(stderr, "CREATE_UDP_SOCKET_ERROR:\tCan not bind to %s_%d, "
-	      "which happens at \"%s\", line [%d], has to abort.\n",
-	      ip, port, __FILE__, __LINE__);
-      
-      close(sock);
-      return EXIT_FAILURE;
-    } // if (connect(sock, (struct sockaddr *)&sa, sizeof(sa))){
+
+    if(ip != NULL){
+      // if send ip is INADDR_ANY, it connects to loopback,
+      // with which we can not use it to send data to a remote machine
+      // use NULL to let OS decide ip and port for sending
+      sa.sin_port = htons(port);
+      sa.sin_addr.s_addr = inet_addr(ip);
+      if (connect(sock, (struct sockaddr *)&sa, sizeof(sa))){
+	fprintf(stderr, "CREATE_UDP_SOCKET_ERROR:\tCan not bind to %s_%d, "
+		"which happens at \"%s\", line [%d], has to abort.\n",
+		ip, port, __FILE__, __LINE__);
+	
+	close(sock);
+	return EXIT_FAILURE;
+      } // if (connect(sock, (struct sockaddr *)&sa, sizeof(sa))){
+    } // if(ip != NULL)
   } // if(direction == UDP_SEND)
-  else{    
+  else{
+    // Receive ip can be INADDR_ANY
+    sa.sin_port   = htons(port);
+    sa.sin_addr.s_addr = inet_addr(ip);
+
     /* receive */
     if (bind(sock, (struct sockaddr *) &sa, sizeof(sa)) < 0) {        
       fprintf(stderr, "CREATE_UDP_SOCKET_ERROR:\tCould not bind to %s_%d, "
