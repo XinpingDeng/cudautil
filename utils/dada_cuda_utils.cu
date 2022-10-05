@@ -8,7 +8,7 @@ int dada_dbregister(dada_hdu_t *hdu){
   
   key_t key = hdu->data_block_key;
   
-  if(dada_dbregister(hdu) < 0){
+  if(dada_cuda_dbregister(hdu) < 0){
     fprintf(stderr, "Error dbregistering HDU with key %x, \n"
 	    "which happens at \"%s\", line [%d], has to abort.\n",
 	    key, __FILE__, __LINE__);
