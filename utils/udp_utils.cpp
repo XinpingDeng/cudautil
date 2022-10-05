@@ -4,7 +4,7 @@
 
 #include "udp_utils.h"
 
-// INADDR_ANY (0.0.0.0) and INADDR_BROADCAST (255.255.255.255)
+// INADDR_ANY (0.0.0.0) and INADDR_UDP_BROADCAST (255.255.255.255)
 
 int create_udp_socket(char *ip, char *group, int port, int &sock,
 		      int reuse, int bufsz, double tout,
@@ -41,7 +41,7 @@ int create_udp_socket(char *ip, char *group, int port, int &sock,
   else if(tout > 0){
     int tout_flag = 0;
     
-    if(direction == RECV){
+    if(direction == UDP_RECV){
       tout_flag = SO_RCVTIMEO;
     }
     else{    
@@ -89,9 +89,9 @@ int create_udp_socket(char *ip, char *group, int port, int &sock,
   sa.sin_port   = htons(port);
   sa.sin_addr.s_addr = inet_addr(ip);
     
-  if(direction == SEND){    
-    // In send direction, BROADCAST is different from others
-    if(mode == BROADCAST){
+  if(direction == UDP_SEND){    
+    // In send direction, UDP_BROADCAST is different from others
+    if(mode == UDP_BROADCAST){
       int broadcast = 1;
       if (setsockopt(sock, SOL_SOCKET, SO_BROADCAST, &broadcast, sizeof(broadcast))){
 	fprintf(stderr, "CREATE_UDP_SOCKET_ERROR:\tCould not setup SO_BROADCAST to %s_%d, "
@@ -101,7 +101,7 @@ int create_udp_socket(char *ip, char *group, int port, int &sock,
 	close(sock);
 	return EXIT_FAILURE;
       } // if (setsockopt(sock, SOL_SOCKET, SO_BROADCAST, &broadcast, sizeof(broadcast)))
-    } // if(mode == BROADCAST)
+    } // if(mode == UDP_BROADCAST)
     
     if (connect(sock, (struct sockaddr *)&sa, sizeof(sa))){
       fprintf(stderr, "CREATE_UDP_SOCKET_ERROR:\tCan not bind to %s_%d, "
@@ -111,7 +111,7 @@ int create_udp_socket(char *ip, char *group, int port, int &sock,
       close(sock);
       return EXIT_FAILURE;
     } // if (connect(sock, (struct sockaddr *)&sa, sizeof(sa))){
-  } // if(direction == SEND)
+  } // if(direction == UDP_SEND)
   else{    
     /* receive */
     if (bind(sock, (struct sockaddr *) &sa, sizeof(sa)) < 0) {        
@@ -123,7 +123,7 @@ int create_udp_socket(char *ip, char *group, int port, int &sock,
       return EXIT_FAILURE;
     } // if (bind(sock, (struct sockaddr *) &sa, sizeof(sa)) < 0) {
     
-    if(mode == MULTICAST){
+    if(mode == UDP_MULTICAST){
       struct ip_mreq mreq = {0};
       mreq.imr_multiaddr.s_addr = inet_addr(group);
       mreq.imr_interface.s_addr = inet_addr(ip);
@@ -138,7 +138,7 @@ int create_udp_socket(char *ip, char *group, int port, int &sock,
 
 	return EXIT_FAILURE;
       } // if (setsockopt(sock, IPPROTO_IP, IP_ADD_MEMBERSHIP,
-    } // if(mode == MULTICAST){
+    } // if(mode == UDP_MULTICAST){
   } //else 
 
   return EXIT_SUCCESS;
