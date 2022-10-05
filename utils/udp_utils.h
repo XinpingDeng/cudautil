@@ -22,8 +22,8 @@
 enum udp_direction {UDP_SEND = 0,    UDP_RECV = 1};
 enum udp_mode      {UDP_UNICAST = 0, UDP_MULTICAST=1, UDP_BROADCAST=2};
 
-#define UDP_DEFAULT_MODE      UDP_UNICAST
-#define UDP_DEFAULT_DIRECTION UDP_SEND
+//#define UDP_DEFAULT_MODE      UDP_UNICAST
+//#define UDP_DEFAULT_DIRECTION UDP_SEND
 
 /*! A function to create udp socket for different mode (unicast, broadcast and multicast) and two directions (send and receive)
   
