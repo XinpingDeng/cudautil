@@ -4,7 +4,10 @@
 
 #include "udp_utils.h"
 
-int create_udp_socket(char *ip, int port, int &sock, int reuse, int window, double tout,
+// INADDR_ANY (0.0.0.0) and INADDR_BROADCAST (255.255.255.255)
+
+int create_udp_socket(char *ip, char *group, int port, int &sock,
+		      int reuse, int bufsz, double tout,
 		      enum udp_mode mode, enum udp_direction direction){
 
   sock = socket(AF_INET, SOCK_DGRAM, IPPROTO_UDP);
@@ -27,9 +30,9 @@ int create_udp_socket(char *ip, int port, int &sock, int reuse, int window, doub
   // tout < 0, block without timeout 
   if (tout == 0){
     if(fcntl(sock, F_SETFL, fcntl(sock, F_GETFL, 0) | O_NONBLOCK) == -1){
-      fprintf(stderr, "CREATE_UDP_SOCKET_ERROR:\tCould not setup NONBLOCK to socket, "
+      fprintf(stderr, "CREATE_UDP_SOCKET_ERROR:\tCould not setup NONBLOCK to %s_%d, "
 	      "which happens at \"%s\", line [%d], has to abort.\n",
-	      __FILE__, __LINE__);
+	      ip, port, __FILE__, __LINE__);
       
       close(sock);
       return EXIT_FAILURE;      
@@ -50,17 +53,17 @@ int create_udp_socket(char *ip, int port, int &sock, int reuse, int window, doub
     
     struct timeval timeval_tout = {tout_second, tout_microsecond};
     if (setsockopt(sock, SOL_SOCKET, tout_flag, (const void*)&timeval_tout, sizeof(timeval_tout))){
-      fprintf(stderr, "CREATE_UDP_SOCKET_ERROR:\tCould not setup TIMEOUT to socket, "
+      fprintf(stderr, "CREATE_UDP_SOCKET_ERROR:\tCould not setup TIMEOUT to %s_%d, "
 	      "which happens at \"%s\", line [%d], has to abort.\n",
-	      __FILE__, __LINE__);
+	      ip, port, __FILE__, __LINE__);
       
       close(sock);
       return EXIT_FAILURE;
     }
   }
 
-  // Setup window if it is not 0
-  if(window){
+  // Setup bufsz if it is > 0
+  if(bufsz > 0){
     int buf_flag  = 0;
   
     if(recv){
@@ -70,8 +73,8 @@ int create_udp_socket(char *ip, int port, int &sock, int reuse, int window, doub
       buf_flag  = SO_SNDBUF;
     }
 
-    int nbyte_window = window*1E6;
-    if (setsockopt(sock, SOL_SOCKET, buf_flag, &nbyte_window, sizeof(nbyte_window))) {
+    int nbyte_buffer = bufsz*1E6;
+    if (setsockopt(sock, SOL_SOCKET, buf_flag, &nbyte_buffer, sizeof(nbyte_buffer))) {
       fprintf(stderr, "CREATE_UDP_SOCKET_ERROR:\tCould not set socket BUF to %s_%d, "
 	      "which happens at \"%s\", line [%d], has to abort.\n",
 	      ip, port, __FILE__, __LINE__);
@@ -84,10 +87,9 @@ int create_udp_socket(char *ip, int port, int &sock, int reuse, int window, doub
   struct sockaddr_in sa = {0};
   sa.sin_family = AF_INET;
   sa.sin_port   = htons(port);
-
-  if(direction == SEND){
-    sa.sin_addr.s_addr = inet_addr(ip);
+  sa.sin_addr.s_addr = inet_addr(ip);
     
+  if(direction == SEND){    
     // In send direction, BROADCAST is different from others
     if(mode == BROADCAST){
       int broadcast = 1;
@@ -100,29 +102,22 @@ int create_udp_socket(char *ip, int port, int &sock, int reuse, int window, doub
 	return EXIT_FAILURE;
       } // if (setsockopt(sock, SOL_SOCKET, SO_BROADCAST, &broadcast, sizeof(broadcast)))
     } // if(mode == BROADCAST)
-
+    
     if (connect(sock, (struct sockaddr *)&sa, sizeof(sa))){
       fprintf(stderr, "CREATE_UDP_SOCKET_ERROR:\tCan not bind to %s_%d, "
 	      "which happens at \"%s\", line [%d], has to abort.\n",
-	      inet_ntoa(sa.sin_addr), ntohs(sa.sin_port), __FILE__, __LINE__);
+	      ip, port, __FILE__, __LINE__);
       
       close(sock);
       return EXIT_FAILURE;
     } // if (connect(sock, (struct sockaddr *)&sa, sizeof(sa))){
   } // if(direction == SEND)
-  else{
-    if(mode == UNICAST){
-      sa.sin_addr.s_addr = inet_addr(ip);
-    } //if(mode == UNICAST)
-    else{
-      sa.sin_addr.s_addr = htonl(INADDR_ANY);
-    } // else
-    
+  else{    
     /* receive */
     if (bind(sock, (struct sockaddr *) &sa, sizeof(sa)) < 0) {        
-      fprintf(stderr, "CREATE_UDP_SOCKET_ERROR:\tCould not bind to socket, "
+      fprintf(stderr, "CREATE_UDP_SOCKET_ERROR:\tCould not bind to %s_%d, "
 	      "which happens at \"%s\", line [%d], has to abort.\n",
-	      __FILE__, __LINE__);
+	      ip, port, __FILE__, __LINE__);
       
       close(sock);
       return EXIT_FAILURE;
@@ -130,14 +125,14 @@ int create_udp_socket(char *ip, int port, int &sock, int reuse, int window, doub
     
     if(mode == MULTICAST){
       struct ip_mreq mreq = {0};
-      mreq.imr_multiaddr.s_addr = inet_addr(ip);
-      mreq.imr_interface.s_addr = htonl(INADDR_ANY);
-            
+      mreq.imr_multiaddr.s_addr = inet_addr(group);
+      mreq.imr_interface.s_addr = inet_addr(ip);
+      
       if (setsockopt(sock, IPPROTO_IP, IP_ADD_MEMBERSHIP,
 		     &mreq, sizeof(mreq)) < 0) {
-	fprintf(stderr, "CREATE_UDP_SOCKET_ERROR:\tCould not add to multicast group, "
+	fprintf(stderr, "CREATE_UDP_SOCKET_ERROR:\tCould not add to multicast group %s, "
 		"which happens at \"%s\", line [%d], has to abort.\n",
-		__FILE__, __LINE__);
+		group, __FILE__, __LINE__);
       
 	close(sock);
 
