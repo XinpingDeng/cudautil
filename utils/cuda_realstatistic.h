@@ -85,10 +85,10 @@ public:
     // Now do calculation
     nblock = ceil(ndata/(float)nthread+0.5);
     
-    checkCudaErrors(cudaMalloc(&d_float,  ndata*sizeof(float)));
-    checkCudaErrors(cudaMalloc(&d_float2, ndata*sizeof(float)));
+    checkCudaErrors(cudaMallocManaged(&d_float,  ndata*sizeof(float), cudaMemAttachGlobal));
+    checkCudaErrors(cudaMallocManaged(&d_float2, ndata*sizeof(float), cudaMemAttachGlobal));
     
-    checkCudaErrors(cudaMalloc(&d_reduction, nblock*sizeof(float)));
+    checkCudaErrors(cudaMallocManaged(&d_reduction, nblock*sizeof(float), cudaMemAttachGlobal));
     
     real_pow2<<<nblock, nthread>>>(data, d_float, d_float2, ndata);
     getLastCudaError("Kernel execution failed [ real_pow2 ]");

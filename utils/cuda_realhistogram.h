@@ -89,14 +89,14 @@ public:
     // Sort out input data
     input = copy2device(raw, ndata, type);
     
-    // Create output buffer as device
-    checkCudaErrors(cudaMalloc(&data, NUM_BINS*sizeof(unsigned)));
+    // Create output buffer as managed
+    checkCudaErrors(cudaMallocManaged(&data, NUM_BINS*sizeof(unsigned), cudaMemAttachGlobal));
 
     // Setup kernel size and run it to get bin
     dim3 grid_smem(nblock);  // Do not want have too many blocks
     dim3 grid_final(nblock/nthread);
     
-    checkCudaErrors(cudaMalloc(&result, nblock*NUM_BINS*sizeof(unsigned)));
+    checkCudaErrors(cudaMallocManaged(&result, nblock*NUM_BINS*sizeof(unsigned), cudaMemAttachGlobal));
     
     histogram<<<grid_smem, nthread>>>(input, ndata, min, max, result);
     getLastCudaError("Kernel execution failed [ histogram ]");

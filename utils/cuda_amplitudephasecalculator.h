@@ -39,6 +39,8 @@ class AmplitudePhaseCalculator{
 public:
   float *amp = NULL;///< Calculated amplitude on device
   float *pha = NULL;///< Calculated phase on device
+  float *h_amp = NULL; ///< Calculated amplitude on host
+  float *h_pha = NULL; ///< Calculated phase on host
   
   //! Constructor of AmplitudePhaseCalculator class.
   /*!
@@ -52,21 +54,23 @@ public:
    * \tparam TIN Input data type
    * 
    * \param[in] raw  input Complex data
-   * \param[in] nsamp   Number of samples to be converted, the size of data is 2*nsamp
+   * \param[in] nsamp   Number of samples to be calculated
    * \param[in] nthread Number of threads per CUDA block to run `amplitude_phase_calculator` kernel
    *
    */
   AmplitudePhaseCalculator(T *raw,
 			   int nsamp,
-			   int nthread
+			   int nthread,
+			   int host
 			   )
-    :nsamp(nsamp), nthread(nthread){
+    :nsamp(nsamp), nthread(nthread), host(host){
 
+    nbyte = nsamp*sizeof(float);
+    
     // sourt out input data
-    data  = copy2device(raw, nsamp, type);
-    nbyte = nsamp * sizeof(float);
-
-    // Get output buffer as device
+    data = copy2device(raw, nsamp, type);
+    
+    // Get output buffer as managed
     checkCudaErrors(cudaMalloc(&amp, nbyte));
     checkCudaErrors(cudaMalloc(&pha, nbyte));
   
@@ -75,6 +79,14 @@ public:
     amplitude_phase_calculator<<<nblock, nthread>>>(data, amp, pha, nsamp);
 
     remove_device_copy(type, data);
+
+    if(host){
+      checkCudaErrors(cudaMallocHost(&h_amp, nbyte));
+      checkCudaErrors(cudaMallocHost(&h_pha, nbyte));
+
+      checkCudaErrors(cudaMemcpy(h_amp, amp, nbyte));
+      checkCudaErrors(cudaMemcpy(h_pha, pha, nbyte));
+    }
     
     checkCudaErrors(cudaDeviceSynchronize());
   }
@@ -89,18 +101,22 @@ public:
     checkCudaErrors(cudaFree(amp));
     checkCudaErrors(cudaFree(pha));
 
+    if(host){
+      checkCudaErrors(cudFreeHost(amp));
+      checkCudaErrors(cudFreeHost(pha));
+    }
     checkCudaErrors(cudaDeviceSynchronize());
   }
 
 private:
   int nsamp; ///< number of values as a private parameter
-  int nbyte; // Number of bytes 
   int nblock; ///< Number of CUDA blocks
-  int nthread; ///< number of threas per block
-  
-  enum cudaMemoryType type; ///< memory type
+  int nthread; ///< number of threas per blocks
+  int host; ///< marker to tell if need a copy on host 
+  int nbyte; ///< Number of bytes of output
   
   T *data; ///< To get hold on the input data
 };
+
 
 #endif

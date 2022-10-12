@@ -166,21 +166,15 @@ T* copy2device(T *raw, int ndata, enum cudaMemoryType &type){
   // cudaMemoryTypeManaged for managed memory.
   checkCudaErrors(cudaPointerGetAttributes(&attributes, raw));
   type = attributes.type;
-
+  
   if(type == cudaMemoryTypeUnregistered || type == cudaMemoryTypeHost){
     int nbytes = ndata*sizeof(T);
     checkCudaErrors(cudaMallocManaged(&data, nbytes, cudaMemAttachGlobal));
     checkCudaErrors(cudaMemcpy(data, raw, nbytes, cudaMemcpyDefault));
   }
   else{
-    if(type == cudaMemoryTypeManaged){
-      fprintf(stdout, "WARN:\tmanaged memory is used, which may make your benchmark is not accurate ... \n");
-    }
-    
     data = raw;
   }
-
-  checkCudaErrors(cudaDeviceSynchronize());
   
   return data;
 }
@@ -192,10 +186,6 @@ int remove_device_copy(enum cudaMemoryType type, T *data){
   
   if(type == cudaMemoryTypeUnregistered || type == cudaMemoryTypeHost){
     checkCudaErrors(cudaFree(data));
-  }
-
-  if(type == cudaMemoryTypeManaged){
-    fprintf(stdout, "WARN:\tmanaged memory is used, which may make your benchmark is not accurate ... \n");
   }
   
   return EXIT_SUCCESS;

@@ -90,9 +90,9 @@ public:
     // Sort out input buffer
     data = copy2device(cmpx, ndata, type);
     
-    // Create device memory for output
-    checkCudaErrors(cudaMalloc(&real, ndata*sizeof(TREAL)));
-    checkCudaErrors(cudaMalloc(&imag, ndata*sizeof(TIMAG)));
+    // Create managed memory for output
+    checkCudaErrors(cudaMallocManaged(&real, ndata*sizeof(TREAL), cudaMemAttachGlobal));
+    checkCudaErrors(cudaMallocManaged(&imag, ndata*sizeof(TIMAG), cudaMemAttachGlobal));
 
     // Setup kernel and run it 
     nblock = ceil(ndata/(float)nthread+0.5);

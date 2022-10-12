@@ -84,8 +84,8 @@ public:
     data1 = copy2device(raw1, ndata, type1);
     data2 = copy2device(raw2, ndata, type2);
 
-    // Create output buffer as device
-    checkCudaErrors(cudaMalloc(&data, ndata*sizeof(float)));
+    // Create output buffer as managed
+    checkCudaErrors(cudaMallocManaged(&data, ndata*sizeof(float), cudaMemAttachGlobal));
     
     // setup kernel size and run it to get difference
     nblock = ceil(ndata/(float)nthread+0.5);

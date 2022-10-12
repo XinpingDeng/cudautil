@@ -91,7 +91,7 @@ public:
     data_imag = copy2device(imag, ndata, type_imag);
 
     // Create output buffer
-    checkCudaErrors(cudaMalloc(&data, ndata*sizeof(TCMPX)));
+    checkCudaErrors(cudaMallocManaged(&data, ndata*sizeof(TCMPX), cudaMemAttachGlobal));
 
     // Setup kernel size and run it
     nblock = ceil(ndata/(float)nthread+0.5);
