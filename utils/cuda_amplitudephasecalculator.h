@@ -12,16 +12,16 @@
  * \tparam T Complex number component data type
  * 
  * \param[in]  v         input Complex data
- * \param[in]  nsamp     Number of data samples to be calculated
+ * \param[in]  ndata     Number of data samples to be calculated
  * \param[out] amplitude Calculated amplitude
  * \param[out] phase     Calculated amplitude
  *
  */
 template <typename T>
-__global__ void amplitude_phase_calculator(const T *v, float *amplitude, float *phase, int nsamp){
+__global__ void amplitude_phase_calculator(const T *v, float *amplitude, float *phase, int ndata){
   int idx = blockDim.x*blockIdx.x + threadIdx.x;
   
-  if(idx < nsamp){
+  if(idx < ndata){
     // We always do calculation in float
     float v1;
     float v2;
@@ -39,8 +39,6 @@ class AmplitudePhaseCalculator{
 public:
   float *amp = NULL;///< Calculated amplitude on device
   float *pha = NULL;///< Calculated phase on device
-  float *h_amp = NULL; ///< Calculated amplitude on host
-  float *h_pha = NULL; ///< Calculated phase on host
   
   //! Constructor of AmplitudePhaseCalculator class.
   /*!
@@ -54,39 +52,28 @@ public:
    * \tparam TIN Input data type
    * 
    * \param[in] raw  input Complex data
-   * \param[in] nsamp   Number of samples to be calculated
+   * \param[in] ndata   Number of samples to be converted, the size of data is 2*ndata
    * \param[in] nthread Number of threads per CUDA block to run `amplitude_phase_calculator` kernel
    *
    */
   AmplitudePhaseCalculator(T *raw,
-			   int nsamp,
-			   int nthread,
-			   int host
+			   int ndata,
+			   int nthread
 			   )
-    :nsamp(nsamp), nthread(nthread), host(host){
+    :ndata(ndata), nthread(nthread){
 
-    nbyte = nsamp*sizeof(float);
-    
     // sourt out input data
-    data = copy2device(raw, nsamp, type);
+    data = copy2device(raw, ndata, type);
     
     // Get output buffer as managed
-    checkCudaErrors(cudaMalloc(&amp, nbyte));
-    checkCudaErrors(cudaMalloc(&pha, nbyte));
+    checkCudaErrors(cudaMallocManaged(&amp, ndata * sizeof(float), cudaMemAttachGlobal));
+    checkCudaErrors(cudaMallocManaged(&pha, ndata * sizeof(float), cudaMemAttachGlobal));
   
     // Get amplitude and phase
-    nblock = ceil(nsamp/(float)nthread+0.5);
-    amplitude_phase_calculator<<<nblock, nthread>>>(data, amp, pha, nsamp);
+    nblock = ceil(ndata/(float)nthread+0.5);
+    amplitude_phase_calculator<<<nblock, nthread>>>(data, amp, pha, ndata);
 
     remove_device_copy(type, data);
-
-    if(host){
-      checkCudaErrors(cudaMallocHost(&h_amp, nbyte));
-      checkCudaErrors(cudaMallocHost(&h_pha, nbyte));
-
-      checkCudaErrors(cudaMemcpy(h_amp, amp, nbyte));
-      checkCudaErrors(cudaMemcpy(h_pha, pha, nbyte));
-    }
     
     checkCudaErrors(cudaDeviceSynchronize());
   }
@@ -101,22 +88,17 @@ public:
     checkCudaErrors(cudaFree(amp));
     checkCudaErrors(cudaFree(pha));
 
-    if(host){
-      checkCudaErrors(cudFreeHost(amp));
-      checkCudaErrors(cudFreeHost(pha));
-    }
     checkCudaErrors(cudaDeviceSynchronize());
   }
 
 private:
-  int nsamp; ///< number of values as a private parameter
+  int ndata; ///< number of values as a private parameter
   int nblock; ///< Number of CUDA blocks
-  int nthread; ///< number of threas per blocks
-  int host; ///< marker to tell if need a copy on host 
-  int nbyte; ///< Number of bytes of output
+  int nthread; ///< number of threas per block
+  
+  enum cudaMemoryType type; ///< memory type
   
   T *data; ///< To get hold on the input data
 };
-
 
 #endif
