@@ -101,8 +101,8 @@ public:
 
     input = copy2device(raw, ndata, type);
     
-    // Create output buffer as managed
-    checkCudaErrors(cudaMallocManaged(&data, ndata*sizeof(TOUT), cudaMemAttachGlobal));
+    // Create output buffer as device
+    checkCudaErrors(cudaMalloc(&data, ndata*sizeof(TOUT)));
 
     // Setup kernel size and run it to convert data
     nblock = ceil(ndata/(float)nthread+0.5);

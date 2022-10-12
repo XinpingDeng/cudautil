@@ -61,15 +61,12 @@ public:
   RealGeneratorSet(curandGenerator_t gen, int ndata, T value, int nthread)
     :gen(gen), ndata(ndata), value(value), nthread(nthread){
 
-    // Create output buffer as managed
-    checkCudaErrors(cudaMallocManaged(&data, ndata*sizeof(T), cudaMemAttachGlobal));
+    // Create output buffer as device
+    checkCudaErrors(cudaMalloc(&data, ndata*sizeof(T)));
 
     // Setup kernel size and run it to convert to a given range
     nblock = ceil(ndata/(float)nthread+0.5);
     real_set<float><<<nblock, nthread>>>(data, value, ndata);
-
-    // we need to sync as we are using managed memory here
-    checkCudaErrors(cudaDeviceSynchronize());
   }
   
   //! Deconstructor of RealGeneratorSet class.
@@ -146,8 +143,8 @@ public:
     // Figure out range
     range = include-exclude;
 
-    // Create output buffer as managed
-    checkCudaErrors(cudaMallocManaged(&data, ndata*sizeof(float), cudaMemAttachGlobal));
+    // Create output buffer as device
+    checkCudaErrors(cudaMalloc(&data, ndata*sizeof(float)));
 
     // Generate data
     checkCudaErrors(curandGenerateUniform(gen, data, ndata));
@@ -208,7 +205,7 @@ public:
     :gen(gen), mean(mean), stddev(stddev), ndata(ndata){
 
     // Create output buffer
-    checkCudaErrors(cudaMallocManaged(&data, ndata*sizeof(float), cudaMemAttachGlobal));
+    checkCudaErrors(cudaMalloc(&data, ndata*sizeof(float)));
 
     // Generate normal data
     checkCudaErrors(curandGenerateNormal(gen, data, ndata, mean, stddev));
