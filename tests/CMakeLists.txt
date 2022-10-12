@@ -1,5 +1,12 @@
+cmake_minimum_required(VERSION 3.13)
+
+project(tests LANGUAGES CUDA CXX C)
+
+include(CheckLanguage)
+check_language(CUDA)
+
 set(INCLUDE_CURRENT ../utils)
-set(INCLUDE_UTILS $ENV{THIRDPARTY_ROOT}/include)
+set(INCLUDE_UTILS $ENV{UTILS_ROOT}/include)
 
 add_executable(test_operators test_operators.cu)
 target_include_directories(test_operators PRIVATE ${INCLUDE_CURRENT} ${INCLUDE_UTILS})
