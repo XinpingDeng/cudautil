@@ -66,7 +66,7 @@ int create_udp_socket(char *ip, char *group, int port, int &sock,
   if(bufsz > 0){
     int buf_flag  = 0;
   
-    if(recv){
+    if(direction==UDP_RECV){
       buf_flag  = SO_RCVBUF;
     }
     else{ 
