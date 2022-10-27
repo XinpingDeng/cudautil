@@ -13,3 +13,5 @@ include_directories(.)
 
 add_subdirectory(tests)
 add_subdirectory(utils)
+
+# cmake -DCMAKE_INSTALL_PREFIX:PATH=/data/BALDR_0/den15c/ ..
