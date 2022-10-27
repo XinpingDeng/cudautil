@@ -9,5 +9,7 @@ endif()
 set(CMAKE_LIBRARY_PATH $ENV{LOCAL}/lib)
 find_library(PSRDADA_LIBRARY psrdada)
 
+include_directories(.)
+
 add_subdirectory(tests)
 add_subdirectory(utils)

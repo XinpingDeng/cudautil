@@ -2,7 +2,7 @@
 #define _GNU_SOURCE
 #endif
 
-#include "cuda_utils.h"
+#include "utils/cuda_utils.h"
 
 #include "cpgplot.h"
 

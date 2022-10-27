@@ -2,11 +2,11 @@
 #define _GNU_SOURCE
 #endif
 
-#include "cuda_utils.h"
+#include "utils/cuda_utils.h"
 
 #include "cpgplot.h"
 
-#include "helper_cuda.h"
+#include "utils/helper_cuda.h"
 
 #define DOCTEST_CONFIG_IMPLEMENT_WITH_MAIN
 #include "doctest/doctest.h"
