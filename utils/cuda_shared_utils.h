@@ -119,13 +119,15 @@ __device__ __host__ static inline void operator-=(cuComplex &a, cuComplex b) { a
 
 // We need more type case overload functions here
 // The following convert float to other types
-__device__ static inline void scalar_typecast(const float a, double   &b) { b = a;}
-__device__ static inline void scalar_typecast(const float a, float    &b) { b = a;}
-__device__ static inline void scalar_typecast(const float a, half     &b) { b = CUDAUTIL_FLOAT2HALF(a);}
-__device__ static inline void scalar_typecast(const float a, int      &b) { b = CUDAUTIL_FLOAT2INT(a);}
-__device__ static inline void scalar_typecast(const float a, int16_t  &b) { b = CUDAUTIL_FLOAT2INT(a);}
-__device__ static inline void scalar_typecast(const float a, int8_t   &b) { b = CUDAUTIL_FLOAT2INT(a);}
-__device__ static inline void scalar_typecast(const float a, unsigned &b) { b = CUDAUTIL_FLOAT2UINT(a);}
+__device__ static inline void scalar_typecast(const float a, double        &b) { b = a;}
+__device__ static inline void scalar_typecast(const float a, float         &b) { b = a;}
+__device__ static inline void scalar_typecast(const float a, half          &b) { b = CUDAUTIL_FLOAT2HALF(a);}
+__device__ static inline void scalar_typecast(const float a, int           &b) { b = CUDAUTIL_FLOAT2INT(a);}
+__device__ static inline void scalar_typecast(const float a, int16_t       &b) { b = CUDAUTIL_FLOAT2INT(a);}
+__device__ static inline void scalar_typecast(const float a, int8_t        &b) { b = CUDAUTIL_FLOAT2INT(a);}
+__device__ static inline void scalar_typecast(const float a, unsigned char &b) { b = (unsigned char)CUDAUTIL_FLOAT2UINT(a);}
+__device__ static inline void scalar_typecast(const float a, char          &b) { b = (char)CUDAUTIL_FLOAT2INT(a);}
+__device__ static inline void scalar_typecast(const float a, unsigned      &b) { b = CUDAUTIL_FLOAT2UINT(a);}
 
 // The following convert other types to float
 __device__ static inline void scalar_typecast(const double a,        float &b) { b = a;}
