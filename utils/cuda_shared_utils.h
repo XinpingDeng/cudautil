@@ -114,6 +114,8 @@ __device__ __host__ static inline void operator-=(cuComplex &a, cuComplex b) { a
 #define CUDAUTIL_FLOAT2UINT __float2uint_rz
 #define CUDAUTIL_HALF2FLOAT __half2float
 #define CUDAUTIL_DOUBLE2INT __double2int_rz
+#define CUDAUTIL_UINT2FLOAT __uint2float_rz
+#define CUDAUTIL_INT2FLOAT  __int2float_rz
 
 // We need more type case overload functions here
 // The following convert float to other types
@@ -126,12 +128,14 @@ __device__ static inline void scalar_typecast(const float a, int8_t   &b) { b = 
 __device__ static inline void scalar_typecast(const float a, unsigned &b) { b = CUDAUTIL_FLOAT2UINT(a);}
 
 // The following convert other types to float
-__device__ static inline void scalar_typecast(const double a,   float &b) { b = a;}
-__device__ static inline void scalar_typecast(const half a,     float &b) { b = CUDAUTIL_HALF2FLOAT(a);}
-__device__ static inline void scalar_typecast(const int a,      float &b) { b = a;}
-__device__ static inline void scalar_typecast(const int16_t a,  float &b) { b = a;}
-__device__ static inline void scalar_typecast(const int8_t a,   float &b) { b = a;}
-__device__ static inline void scalar_typecast(const unsigned a, float &b) { b = a;}
+__device__ static inline void scalar_typecast(const double a,        float &b) { b = a;}
+__device__ static inline void scalar_typecast(const half a,          float &b) { b = CUDAUTIL_HALF2FLOAT(a);}
+__device__ static inline void scalar_typecast(const int a,           float &b) { b = a;}
+__device__ static inline void scalar_typecast(const int16_t a,       float &b) { b = a;}
+__device__ static inline void scalar_typecast(const int8_t a,        float &b) { b = a;}
+__device__ static inline void scalar_typecast(const unsigned char a, float &b) { b = CUDAUTIL_UINT2FLOAT((unsigned int)a);}
+__device__ static inline void scalar_typecast(const char a,          float &b) { b = CUDAUTIL_INT2FLOAT((int)a);}
+__device__ static inline void scalar_typecast(const unsigned a,      float &b) { b = a;}
 
 template <typename TMIN, typename TSUB, typename TRES>
 __device__ static inline void scalar_subtract(const TMIN minuend, const TSUB subtrahend, TRES &result) {
