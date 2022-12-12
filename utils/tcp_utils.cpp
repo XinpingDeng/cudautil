@@ -99,7 +99,7 @@ int create_tcp_socket(char *ip, int port, int &sock,
     }
     
     if (connect(sock0, (struct sockaddr *)&sa, sizeof(sa))){
-      fprintf(stderr, "CREATE_TCP_SOCKET_ERROR:\tCan not bind to %s_%d, "
+      fprintf(stderr, "CREATE_TCP_SOCKET_ERROR:\tCan not connect to %s_%d, "
 	      "which happens at \"%s\", line [%d], has to abort.\n",
 	      ip, port, __FILE__, __LINE__);
       
