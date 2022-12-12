@@ -94,7 +94,6 @@ int create_tcp_socket(char *ip, int port, int &sock,
     if (setsockopt(sock0, SOL_SOCKET, SO_LINGER, (char *)&linger, sizeof(struct linger))!=0) {
       close(sock0);
       sock0 = 0;
-      perror("accept");
       return EXIT_FAILURE;
     }
     
@@ -102,6 +101,7 @@ int create_tcp_socket(char *ip, int port, int &sock,
       fprintf(stderr, "CREATE_TCP_SOCKET_ERROR: Can not connect to %s_%d, "
 	      "which happens at \"%s\", line [%d], has to abort.\n",
 	      ip, port, __FILE__, __LINE__);
+      perror("connect");
       
       close(sock0);
       return EXIT_FAILURE;
@@ -119,34 +119,34 @@ int create_tcp_socket(char *ip, int port, int &sock,
       close(sock0);
       return EXIT_FAILURE;
     } // if (bind(sock0, (struct sockaddr *) &sa, sizeof(sa)) < 0) {
-  } //else
-
-  /*listen*/
-  if(depth <= 0){
-    depth = TCP_DEFAULT_BACKLOG;
-  }
-  if (listen(sock0, depth) < 0){        
-    fprintf(stderr, "CREATE_TCP_SOCKET_ERROR: Could not listen to a given TCP socket, "
-	    "which happens at \"%s\", line [%d], has to abort.\n",
-	    __FILE__, __LINE__);
-      
-    close(sock0);
-    return EXIT_FAILURE;
-  }
     
-  /*Accpet*/
-  struct sockaddr_in cli_addr;
-  socklen_t cli_len = sizeof(cli_addr);
-  sock = accept(sock0, (struct sockaddr*)&cli_addr, &cli_len);
-  if (sock < 0){          
-    fprintf(stderr, "CREATE_TCP_SOCKET_ERROR: Could not accept a given TCP socket, "
-	    "which happens at \"%s\", line [%d], has to abort.\n",
-	    __FILE__, __LINE__);
+    /*listen*/
+    if(depth <= 0){
+      depth = TCP_DEFAULT_BACKLOG;
+    }  // depth <= 0
+    if (listen(sock0, depth) < 0){        
+      fprintf(stderr, "CREATE_TCP_SOCKET_ERROR: Could not listen to a given TCP socket, "
+	      "which happens at \"%s\", line [%d], has to abort.\n",
+	      __FILE__, __LINE__);
       
-    close(sock0);
-    close(sock);
-    return EXIT_FAILURE;
-  }
+      close(sock0);
+      return EXIT_FAILURE;
+    } // listen < 0
+    
+    /*Accpet*/
+    struct sockaddr_in cli_addr;
+    socklen_t cli_len = sizeof(cli_addr);
+    sock = accept(sock0, (struct sockaddr*)&cli_addr, &cli_len);
+    if (sock < 0){          
+      fprintf(stderr, "CREATE_TCP_SOCKET_ERROR: Could not accept a given TCP socket, "
+	      "which happens at \"%s\", line [%d], has to abort.\n",
+	      __FILE__, __LINE__);
+      
+      close(sock0);
+      close(sock);
+      return EXIT_FAILURE;
+    } // sock < 0
+  }  // else
     
   return EXIT_SUCCESS;
 }
