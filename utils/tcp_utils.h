@@ -39,8 +39,9 @@ int create_tcp_socket(char *ip, int port, int &sock,
 		      enum tcp_direction direction);
 
 /*! A function to send buffer with TCP protocol 
-  @param[in] buf buffer to be sent 
-  @param[in] length of the buffer in bytes    
+  @param[in] sock   socket to send data to
+  @param[in] buf    buffer to be sent 
+  @param[in] nbytes length of the buffer in bytes    
  */
-int sendbuf_tcp(char *buf, int nbytes);
+int sendbuf_tcp(int sock, char *buf, int nbytes);
 #endif
