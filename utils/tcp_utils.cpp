@@ -150,3 +150,33 @@ int create_tcp_socket(char *ip, int port, int &sock,
     
   return EXIT_SUCCESS;
 }
+
+int sendbuf_tcp(int sock, char *buf, int nbytes) {
+  int nwrote;
+  int ntowrite = nbytes;
+  char *ptr = buf;
+  
+  while (ntowrite>0) {
+    nwrote = send(sock, ptr, ntowrite, 0);
+    if (nwrote==-1) {
+      if (errno == EINTR)
+	continue;
+      fprintf(stderr, "SENDBUF_TCP_ERROR: Error writing to network with EINTR, "
+	      "which happens at \"%s\", line [%d], has to abort.\n",
+	      __FILE__, __LINE__);
+      return EXIT_SUCCESS;
+
+    } else if (nwrote==0) {
+      fprintf(stderr, "SENDBUF_TCP_WARN: Did not write any bytes (0 bytes) "
+	      "which happens at \"%s\", line [%d], has to abort.\n",
+	      __FILE__, __LINE__);
+      
+      return EXIT_SUCCESS;
+    } else {
+      ntowrite -= nwrote;
+      ptr += nwrote;
+    }
+  }
+  
+  return EXIT_SUCCESS;
+}

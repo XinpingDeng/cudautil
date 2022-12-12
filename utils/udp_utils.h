@@ -6,7 +6,7 @@
 #include <limits.h>
 
 #include <time.h>
-#include <getopt.h>
+#include <errno.h>
 
 #include <unistd.h>
 #include <stdio.h>

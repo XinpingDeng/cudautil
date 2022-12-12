@@ -6,7 +6,7 @@
 #include <limits.h>
 
 #include <time.h>
-#include <getopt.h>
+#include <errno.h>
 
 #include <unistd.h>
 #include <stdio.h>
@@ -37,4 +37,10 @@ enum tcp_direction {TCP_SEND = 0, TCP_RECV = 1};
 int create_tcp_socket(char *ip, int port, int &sock,
 		      int reuse, int bufsz, double tout, int depth,
 		      enum tcp_direction direction);
+
+/*! A function to send buffer with TCP protocol 
+  @param[in] buf buffer to be sent 
+  @param[in] length of the buffer in bytes    
+ */
+int sendbuf_tcp(char *buf, int nbytes);
 #endif
