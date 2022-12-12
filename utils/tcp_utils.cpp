@@ -93,7 +93,7 @@ int create_tcp_socket(char *ip, int port, int &sock,
     struct linger linger = {1, 1};
     if (setsockopt(sock0, SOL_SOCKET, SO_LINGER, (char *)&linger, sizeof(struct linger))!=0) {
       close(sock0);
-      sock = 0;
+      sock0 = 0;
       perror("accept");
       return EXIT_FAILURE;
     }
