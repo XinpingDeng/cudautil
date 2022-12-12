@@ -13,7 +13,7 @@ int create_tcp_socket(char *ip, int port, int &sock,
   // Setup reuse if it is required
   if(reuse){
     if (setsockopt(sock0, SOL_SOCKET, SO_REUSEADDR, &reuse, sizeof(reuse))){
-      fprintf(stderr, "CREATE_TCP_SOCKET_ERROR:\tCould not enable SO_REUSEADDR to %s_%d, "
+      fprintf(stderr, "CREATE_TCP_SOCKET_ERROR: Could not enable SO_REUSEADDR to %s_%d, "
 	      "which happens at \"%s\", line [%d], has to abort.\n",
 	      ip, port, __FILE__, __LINE__);
       
@@ -28,7 +28,7 @@ int create_tcp_socket(char *ip, int port, int &sock,
   // tout < 0, block without timeout 
   if (tout == 0){
     if(fcntl(sock0, F_SETFL, fcntl(sock0, F_GETFL, 0) | O_NONBLOCK) == -1){
-      fprintf(stderr, "CREATE_TCP_SOCKET_ERROR:\tCould not setup NONBLOCK to %s_%d, "
+      fprintf(stderr, "CREATE_TCP_SOCKET_ERROR: Could not setup NONBLOCK to %s_%d, "
 	      "which happens at \"%s\", line [%d], has to abort.\n",
 	      ip, port, __FILE__, __LINE__);
       
@@ -51,7 +51,7 @@ int create_tcp_socket(char *ip, int port, int &sock,
     
     struct timeval timeval_tout = {tout_second, tout_microsecond};
     if (setsockopt(sock0, SOL_SOCKET, tout_flag, (const void*)&timeval_tout, sizeof(timeval_tout))){
-      fprintf(stderr, "CREATE_TCP_SOCKET_ERROR:\tCould not setup TIMEOUT to %s_%d, "
+      fprintf(stderr, "CREATE_TCP_SOCKET_ERROR: Could not setup TIMEOUT to %s_%d, "
 	      "which happens at \"%s\", line [%d], has to abort.\n",
 	      ip, port, __FILE__, __LINE__);
       
@@ -73,7 +73,7 @@ int create_tcp_socket(char *ip, int port, int &sock,
 
     int nbyte_buffer = bufsz*1E6;
     if (setsockopt(sock0, SOL_SOCKET, buf_flag, &nbyte_buffer, sizeof(nbyte_buffer))) {
-      fprintf(stderr, "CREATE_TCP_SOCKET_ERROR:\tCould not set socket BUF to %s_%d, "
+      fprintf(stderr, "CREATE_TCP_SOCKET_ERROR: Could not set socket BUF to %s_%d, "
 	      "which happens at \"%s\", line [%d], has to abort.\n",
 	      ip, port, __FILE__, __LINE__);
       
@@ -99,7 +99,7 @@ int create_tcp_socket(char *ip, int port, int &sock,
     }
     
     if (connect(sock0, (struct sockaddr *)&sa, sizeof(sa))){
-      fprintf(stderr, "CREATE_TCP_SOCKET_ERROR:\tCan not connect to %s_%d, "
+      fprintf(stderr, "CREATE_TCP_SOCKET_ERROR: Can not connect to %s_%d, "
 	      "which happens at \"%s\", line [%d], has to abort.\n",
 	      ip, port, __FILE__, __LINE__);
       
@@ -112,7 +112,7 @@ int create_tcp_socket(char *ip, int port, int &sock,
   else{
     /* receive */
     if (bind(sock0, (struct sockaddr *) &sa, sizeof(sa)) < 0) {        
-      fprintf(stderr, "CREATE_TCP_SOCKET_ERROR:\tCould not bind to %s_%d, "
+      fprintf(stderr, "CREATE_TCP_SOCKET_ERROR: Could not bind to %s_%d, "
 	      "which happens at \"%s\", line [%d], has to abort.\n",
 	      ip, port, __FILE__, __LINE__);
       
