@@ -168,7 +168,7 @@ for key in dada_header:
     if data_type == "int":
         data_type_marker = '"%d"'
     if data_type == "float" or data_type == "double":
-        data_type_marker = '"%f"'
+        data_type_marker = '"%.15f"' # to keep enough digi
     if data_type == "string":
         data_type_marker = '"%s"'
     if data_type == "uint64_t":
