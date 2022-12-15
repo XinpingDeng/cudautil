@@ -164,14 +164,14 @@ int sendbuf_tcp(int sock, char *buf, int nbytes) {
       fprintf(stderr, "SENDBUF_TCP_ERROR: Error writing to network with EINTR, "
 	      "which happens at \"%s\", line [%d], has to abort.\n",
 	      __FILE__, __LINE__);
-      return EXIT_SUCCESS;
+      return EXIT_FAILURE;
 
     } else if (nwrote==0) {
       fprintf(stderr, "SENDBUF_TCP_WARN: Did not write any bytes (0 bytes) "
 	      "which happens at \"%s\", line [%d], has to abort.\n",
 	      __FILE__, __LINE__);
       
-      return EXIT_SUCCESS;
+      return EXIT_FAILURE;
     } else {
       ntowrite -= nwrote;
       ptr += nwrote;
