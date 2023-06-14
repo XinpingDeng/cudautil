@@ -51,27 +51,72 @@ int main(int argc, char *argv[]){
   checkCudaErrors(cudaMemcpy(d_in1, data.data, nbyte, cudaMemcpyHostToDevice));
   checkCudaErrors(cudaMemcpy(d_in2, data.data, nbyte, cudaMemcpyHostToDevice));
   
-  // setup timer 
-  cudaEvent_t g_start;
-  cudaEvent_t g_stop;
-  float gtime = 0;
-  checkCudaErrors(cudaEventCreate(&g_start));
-  checkCudaErrors(cudaEventCreate(&g_stop));
-  
-  CUDA_STARTTIME(g);
+  // run it 
   for(int i = 0; i < nrepeat; i++){
+    cudaEvent_t g_start;
+    cudaEvent_t g_stop;
+    float gtime = 0;
+    checkCudaErrors(cudaEventCreate(&g_start));
+    checkCudaErrors(cudaEventCreate(&g_stop));
+  
+    CUDA_STARTTIME(g);
+
     krnl_add<<<nblock, nthread>>>(d_in1, d_in2, d_out, ndata);
     getLastCudaError("Kernel execution failed [ krnl_add ]");
 
+    CUDA_STOPTIME(g);
+    std::cout << "elapsed time with device memory is " << gtime << " milliseconds" << std::endl;
   }
   
-  CUDA_STOPTIME(g);
-  std::cout << "elapsed time is " << gtime/nrepeat << " milliseconds" << std::endl;
-
   // free memory
   checkCudaErrors(cudaFree(d_in1));
   checkCudaErrors(cudaFree(d_in2));
   checkCudaErrors(cudaFree(d_out));
+  
+  // get device memory space
+  int device = -1;
+  checkCudaErrors(cudaGetDevice(&device));
+  std::cout << "device is " << device << std::endl;
+  
+  float *m_in1 = NULL;
+  float *m_in2 = NULL;
+  float *m_out = NULL;
+  checkCudaErrors(cudaMallocManaged(&m_in1, nbyte, cudaMemAttachGlobal));
+  checkCudaErrors(cudaMallocManaged(&m_in2, nbyte, cudaMemAttachGlobal));
+  checkCudaErrors(cudaMallocManaged(&m_out, nbyte, cudaMemAttachGlobal));
+
+  // setup device memory
+  checkCudaErrors(cudaMemcpy(m_in1, data.data, nbyte, cudaMemcpyHostToDevice));
+  checkCudaErrors(cudaMemcpy(m_in2, data.data, nbyte, cudaMemcpyHostToDevice));
+  
+  // fetch to get bench right, this is important to make bench with managed memory right
+  checkCudaErrors(cudaMemPrefetchAsync(m_in1, nbyte, device, NULL));
+  checkCudaErrors(cudaMemPrefetchAsync(m_in2, nbyte, device, NULL));
+  checkCudaErrors(cudaMemPrefetchAsync(m_out, nbyte, device, NULL));
+ 
+  // run it 
+  for(int i = 0; i < nrepeat; i++){
+    cudaEvent_t g_start;
+    cudaEvent_t g_stop;
+    float gtime = 0;
+    checkCudaErrors(cudaEventCreate(&g_start));
+    checkCudaErrors(cudaEventCreate(&g_stop));
+  
+    CUDA_STARTTIME(g);
+
+    krnl_add<<<nblock, nthread>>>(m_in1, m_in2, m_out, ndata);
+    getLastCudaError("Kernel execution failed [ krnl_add ]");
+
+    checkCudaErrors(cudaDeviceSynchronize());
+    
+    CUDA_STOPTIME(g);
+    std::cout << "elapsed time with managed memory is " << gtime << " milliseconds" << std::endl;
+  }
+  
+  // free memory
+  checkCudaErrors(cudaFree(m_in1));
+  checkCudaErrors(cudaFree(m_in2));
+  checkCudaErrors(cudaFree(m_out));
   
   return EXIT_SUCCESS;
 }
